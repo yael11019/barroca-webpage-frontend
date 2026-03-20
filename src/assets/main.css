@@ -6,6 +6,8 @@
   --color-gold-light: #FFF0A0;
   --color-charcoal: #2D2D2D;
   --color-charcoal-light: #3D3D3D;
+  --color-verde: #0c221f;
+  --color-verde-light: #153830;
   --font-heading: 'Montserrat', sans-serif;
   --font-body: 'Lato', sans-serif;
 }
@@ -18,6 +20,9 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
-html {
-  scroll-behavior: smooth;
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
 }

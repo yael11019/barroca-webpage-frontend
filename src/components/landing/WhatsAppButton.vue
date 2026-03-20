@@ -9,7 +9,7 @@ const { trackWhatsAppClick } = useAnalytics()
     href="https://wa.me/524171601530?text=Hola%2C%20me%20gustaria%20obtener%20mas%20informacion%20sobre%20sus%20productos."
     target="_blank"
     rel="noopener noreferrer"
-    class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+    class="absolute bottom-6 right-6 z-30 w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
     aria-label="Contactar por WhatsApp"
     @click="trackWhatsAppClick('Boton flotante general')"
   >
