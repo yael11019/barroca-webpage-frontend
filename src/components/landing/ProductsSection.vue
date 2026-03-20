@@ -406,7 +406,7 @@ onMounted(() => {
                 <span
                   v-for="v in producto.variantes.slice(0, 6)"
                   :key="v.id"
-                  :title="v.color ?? undefined"
+                  :title="v.color !== null ? v.color : undefined"
                   class="w-5 h-5 rounded-full border border-gray-200 bg-gray-200 text-[9px] flex items-center justify-center font-bold text-gray-500"
                 >
                   <!-- TODO: cuando el backend provea código de color hex, usar como bg -->
