@@ -17,7 +17,7 @@ const navLinks = [
 const categoryItems = [
   { label: 'Distribuidores', section: 'distribuidores', visible: true },
   { label: 'Servicios', section: 'servicios', visible: true },
-  { label: 'Proyectos / Comunidad', section: 'proyectos', visible: false },
+  { label: 'Proyectos / Comunidad', section: 'proyectos', visible: true },
   { label: 'Carrito', section: 'carrito-vista', visible: false },
   { label: 'Barroca Bot', section: 'barroca-bot', visible: true },
 ]
@@ -65,8 +65,8 @@ function goTo(section: string) {
         <!-- Right side -->
         <div class="flex items-center gap-1">
 
-          <!-- 3-lines categories menu -->
-          <div class="relative">
+          <!-- 3-lines categories menu (desktop only) -->
+          <div class="relative hidden md:block">
             <button
               @click="categoriesOpen = !categoriesOpen"
               class="p-2 text-charcoal hover:text-gold transition-colors"

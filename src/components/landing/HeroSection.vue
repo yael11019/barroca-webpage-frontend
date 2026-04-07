@@ -1,44 +1,93 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNavigation } from '@/composables/useNavigation'
+import { useConfigStore } from '@/stores/config'
 
 const { navigateTo } = useNavigation()
+const configStore = useConfigStore()
 
-// ── Carousel ──────────────────────────────────────────────────────────────────
-// TODO: Fetch desde backend GET /api/public/carousel
-// El backend debe retornar las imágenes en orden configurable desde el admin.
-const slides = ref([
+// ── Hero ─────────────────────────────────────────────────────────────────────
+
+// ── Carrusel ──────────────────────────────────────────────────────────────────
+// Tipo unificado: campos del backend + campos opcionales del placeholder local
+interface SlideDisplay {
+  id: number
+  image_url: string
+  blur_placeholder: string
+  order: number
+  link_url: string | null
+  gradiente?: string
+  titulo?: string
+  subtitulo?: string
+}
+
+// Placeholders locales mientras el backend no tiene imágenes subidas
+const placeholderSlides: SlideDisplay[] = [
   {
     id: 1,
-    imagen: '',
+    image_url: '',
+    blur_placeholder: '',
+    order: 1,
+    link_url: null,
     gradiente: 'from-verde to-verde-light',
     titulo: 'Diseño que inspira',
     subtitulo: 'Materiales premium para construcción e interiores',
   },
   {
     id: 2,
-    imagen: '',
+    image_url: '',
+    blur_placeholder: '',
+    order: 2,
+    link_url: null,
     gradiente: 'from-charcoal to-charcoal-light',
     titulo: 'Melaminas de Alta Gama',
     subtitulo: 'La mejor variedad en colores y acabados',
   },
   {
     id: 3,
-    imagen: '',
+    image_url: '',
+    blur_placeholder: '',
+    order: 3,
+    link_url: null,
     gradiente: 'from-amber-800 to-amber-600',
     titulo: 'Pisos SPC y Vinílicos',
     subtitulo: 'Durabilidad y estética en cada paso',
   },
-])
+]
+
+// Usa las del backend cuando ya llegaron; si no, muestra los placeholders
+const slides = computed<SlideDisplay[]>(() =>
+  configStore.carousel.length > 0 ? configStore.carousel : placeholderSlides
+)
+
 const currentSlide = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
+
+// ── Lazy Loading del Carrusel ─────────────────────────────────────────────────
+// Solo se renderizan los <img> de los slides que ya fueron "alcanzados" durante
+// la navegación. Empieza con [0, 1] para precargar el primero y el siguiente.
+const loadedSlideIndices = ref<number[]>([0, 1])
+
+function preload(index: number) {
+  if (!loadedSlideIndices.value.includes(index)) {
+    loadedSlideIndices.value.push(index)
+  }
+}
+
+function isSlideLoaded(index: number) {
+  return loadedSlideIndices.value.includes(index)
+}
 
 function next() {
   currentSlide.value = (currentSlide.value + 1) % slides.value.length
+  preload((currentSlide.value + 1) % slides.value.length)
 }
+
 function prev() {
   currentSlide.value = (currentSlide.value - 1 + slides.value.length) % slides.value.length
+  preload((currentSlide.value + 1) % slides.value.length)
 }
+
+let timer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   timer = setInterval(next, 5000)
@@ -93,7 +142,23 @@ function irACatalogo(filtro?: string) {
   <div>
     <!-- ── Hero Banner ──────────────────────────────────────────────────────── -->
     <section class="relative min-h-[50vh] flex items-center justify-center bg-gold overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-gold-light via-gold to-gold-dark opacity-80"></div>
+
+      <!-- Imagen real del backend detrás del contenido -->
+      <img
+        v-if="configStore.heroUrl"
+        :src="configStore.heroUrl"
+        alt="Imagen principal Barroca"
+        class="absolute inset-0 w-full h-full object-cover"
+      />
+
+      <!-- Sin imagen: gradiente dorado de marca -->
+      <!-- Con imagen: overlay oscuro sutil solo para contraste del texto -->
+      <div
+        class="absolute inset-0"
+        :class="configStore.heroUrl
+          ? 'bg-black/40'
+          : 'bg-gradient-to-br from-gold-light via-gold to-gold-dark opacity-90'"
+      />
       <div class="absolute top-0 left-0 right-0 h-1 bg-verde"></div>
 
       <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto py-4">
@@ -104,9 +169,12 @@ function irACatalogo(filtro?: string) {
         />
 
         <!-- TODO: Reemplazar con el eslogan que proporcione Ximena -->
-        <h1 class="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-verde leading-tight mb-4">
+        <h1
+          class="font-heading text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4"
+          :class="configStore.heroUrl ? 'text-white' : 'text-verde'"
+        >
           Diseño que inspira,<br>
-          <span class="text-verde/80">calidad que trasciende.</span>
+          <span :class="configStore.heroUrl ? 'text-white/80' : 'text-verde/80'">calidad que trasciende.</span>
         </h1>
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -118,7 +186,10 @@ function irACatalogo(filtro?: string) {
           </button>
           <button
             @click="navigateTo('sucursales')"
-            class="border-2 border-verde hover:bg-verde hover:text-gold text-verde font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
+            class="font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
+            :class="configStore.heroUrl
+              ? 'border-2 border-white hover:bg-white hover:text-charcoal text-white'
+              : 'border-2 border-verde hover:bg-verde hover:text-gold text-verde'"
           >
             Nuestras Sucursales
           </button>
@@ -127,7 +198,6 @@ function irACatalogo(filtro?: string) {
     </section>
 
     <!-- ── Carrusel de Fotos ─────────────────────────────────────────────────── -->
-    <!-- TODO: Las imágenes y su orden se gestionan desde el backend -->
     <section class="relative bg-charcoal overflow-hidden">
       <div class="relative h-72 md:h-[480px]">
 
@@ -138,18 +208,26 @@ function irACatalogo(filtro?: string) {
           class="absolute inset-0 transition-opacity duration-700"
           :class="i === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'"
         >
-          <!-- Imagen real del backend (cuando exista) -->
-          <img
-            v-if="slide.imagen"
-            :src="slide.imagen"
-            :alt="slide.titulo"
-            class="w-full h-full object-cover"
-          />
-          <!-- Placeholder hasta que lleguen las imágenes -->
+          <!-- Imagen del backend: solo se renderiza cuando el slide ha sido alcanzado -->
+          <template v-if="slide.image_url && isSlideLoaded(i)">
+            <!-- Blur placeholder mientras carga la imagen completa -->
+            <div
+              v-if="slide.blur_placeholder"
+              class="absolute inset-0 bg-cover bg-center"
+              :style="{ backgroundImage: `url(${slide.blur_placeholder})` }"
+            />
+            <img
+              :src="slide.image_url"
+              :alt="`Slide ${i + 1}`"
+              class="absolute inset-0 w-full h-full object-cover"
+            />
+          </template>
+
+          <!-- Placeholder local (sin imagen de backend) -->
           <div
-            v-else
+            v-else-if="!slide.image_url"
             class="w-full h-full bg-gradient-to-br flex items-end justify-center pb-12"
-            :class="slide.gradiente"
+            :class="slide.gradiente ?? 'from-charcoal to-charcoal-light'"
           >
             <div class="text-center text-white px-6">
               <p class="text-xs font-heading uppercase tracking-widest mb-2 opacity-50">
@@ -188,7 +266,7 @@ function irACatalogo(filtro?: string) {
           <button
             v-for="(_, i) in slides"
             :key="i"
-            @click="currentSlide = i"
+            @click="currentSlide = i; preload((i + 1) % slides.length)"
             class="w-2.5 h-2.5 rounded-full transition-colors"
             :class="i === currentSlide ? 'bg-gold' : 'bg-white/50'"
             :aria-label="`Ir a slide ${i + 1}`"
@@ -215,14 +293,13 @@ function irACatalogo(filtro?: string) {
             @click="irACatalogo('melamina:' + linea.id)"
             class="group relative rounded-xl overflow-hidden aspect-square shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
           >
-            <!-- Imagen real (cuando exista) -->
             <img
               v-if="linea.imagen"
               :src="linea.imagen"
               :alt="linea.nombre"
               class="w-full h-full object-cover"
+              loading="lazy"
             />
-            <!-- Placeholder -->
             <div
               v-else
               class="w-full h-full flex items-center justify-center"
@@ -236,10 +313,8 @@ function irACatalogo(filtro?: string) {
               </div>
             </div>
 
-            <!-- Overlay -->
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/85 transition-all duration-300"></div>
 
-            <!-- Texto -->
             <div class="absolute bottom-0 left-0 right-0 p-4 text-left text-white">
               <p class="font-heading font-bold text-sm md:text-base">{{ linea.nombre }}</p>
               <p class="text-xs text-white/70 mt-0.5">{{ linea.descripcion }}</p>
@@ -279,14 +354,13 @@ function irACatalogo(filtro?: string) {
             @click="irACatalogo('piso:' + linea.id)"
             class="group relative rounded-xl overflow-hidden h-64 md:h-80 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
           >
-            <!-- Imagen real (cuando exista) -->
             <img
               v-if="linea.imagen"
               :src="linea.imagen"
               :alt="linea.nombre"
               class="w-full h-full object-cover"
+              loading="lazy"
             />
-            <!-- Placeholder -->
             <div
               v-else
               class="w-full h-full"
