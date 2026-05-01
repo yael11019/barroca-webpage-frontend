@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
+import { useProductosStore } from '@/stores/productos'
+import type { ProductoCatalogo, ColorCatalogo } from '@/types/producto'
+import { generarVisualizacion } from '@/services/gemini.service'
+import { imageUrl } from '@/utils/imageUrl'
+import api from '@/services/api'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 interface Mensaje {
@@ -8,18 +13,17 @@ interface Mensaje {
   text: string
 }
 
-interface Material {
-  id: number
-  nombre: string
-  color: string
-  colorTexto: string
-  categoria: 'melamina' | 'piso'
-}
-
 type ShowroomStep = 'material' | 'upload' | 'result'
 
 // ── Mobile tabs ────────────────────────────────────────────────────────────
 const activeTab = ref<'chat' | 'showroom'>('chat')
+
+// ── Productos store ────────────────────────────────────────────────────────
+const productosStore = useProductosStore()
+
+onMounted(() => {
+  if (!productosStore.productos.length) productosStore.fetchProductos()
+})
 
 // ── Chat FAQ ───────────────────────────────────────────────────────────────
 let msgId = 2
@@ -78,7 +82,7 @@ const faqs = [
   },
   {
     keywords: ['showroom', 'visualizar', 'visualiza', 'ver como', 'probar', 'prueba', 'foto', 'espacio'],
-    respuesta: '¡Usa el **Showroom Virtual** justo aquí al lado! 👈\n\n1. Elige el material que te interesa\n2. Sube una foto de tu espacio\n3. Ve cómo quedaría\n\n¡Es muy fácil y gratis!',
+    respuesta: '¡Usa el **Showroom Virtual** justo aquí al lado! 👈\n\n1. Elige el material que te interesa\n2. Sube una foto de tu espacio\n3. La IA genera cómo quedaría\n\n¡Es muy fácil y gratis!',
   },
   {
     keywords: ['hola', 'hello', 'buenos', 'buenas', 'saludos', 'que tal', 'qué tal', 'buen dia'],
@@ -105,7 +109,6 @@ function getBotResponse(text: string): string {
   return faqs.find(f => f.keywords.some(k => n.includes(normalize(k))))?.respuesta ?? defaultResponse
 }
 
-// Renderiza texto con **negrita** y saltos de línea
 function renderText(text: string): string {
   return text
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -120,9 +123,17 @@ async function sendMessage(text?: string) {
   await scrollToBottom()
   isBotTyping.value = true
   await scrollToBottom()
-  await new Promise(r => setTimeout(r, 900 + Math.random() * 700))
+
+  let respuesta: string
+  try {
+    const { data } = await api.post('/api/public/chat', { pregunta: msg })
+    respuesta = data?.respuesta ?? data?.message ?? data?.answer ?? data?.texto ?? getBotResponse(msg)
+  } catch {
+    respuesta = getBotResponse(msg)
+  }
+
   isBotTyping.value = false
-  mensajes.value.push({ id: msgId++, from: 'bot', text: getBotResponse(msg) })
+  mensajes.value.push({ id: msgId++, from: 'bot', text: respuesta })
   await scrollToBottom()
 }
 
@@ -137,31 +148,44 @@ const showQuickReplies = computed(
 
 // ── Showroom ───────────────────────────────────────────────────────────────
 const showroomStep = ref<ShowroomStep>('material')
-const selectedMaterial = ref<Material | null>(null)
 const uploadedPhoto = ref<string | null>(null)
 const isDragging = ref(false)
 const isProcessing = ref(false)
+const processingError = ref<string | null>(null)
+const resultImage = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const materiales: Material[] = [
-  { id: 1, nombre: 'Nogal',          color: '#7D5A2F', colorTexto: '#fff', categoria: 'melamina' },
-  { id: 2, nombre: 'Blanca',         color: '#F0EDE8', colorTexto: '#555', categoria: 'melamina' },
-  { id: 3, nombre: 'Gris Cemento',   color: '#8E9196', colorTexto: '#fff', categoria: 'melamina' },
-  { id: 4, nombre: 'Roble Natural',  color: '#C4955A', colorTexto: '#fff', categoria: 'melamina' },
-  { id: 5, nombre: 'Negro Mate',     color: '#2D2D2D', colorTexto: '#fff', categoria: 'melamina' },
-  { id: 6, nombre: 'Verde Salvia',   color: '#7A9E7E', colorTexto: '#fff', categoria: 'melamina' },
-  { id: 7, nombre: 'SPC Roble',      color: '#A0722A', colorTexto: '#fff', categoria: 'piso' },
-  { id: 8, nombre: 'Vinílico Gris',  color: '#B0BEC5', colorTexto: '#333', categoria: 'piso' },
-]
+// ── Selección de material (Tipo → Producto/Línea → Color) ──────────────────
+const showroomTipo = ref<string | null>(null)
+const showroomProducto = ref<ProductoCatalogo | null>(null)
+const showroomColorIdx = ref<number>(0)
 
-const melaminasList = materiales.filter(m => m.categoria === 'melamina')
-const pisosList     = materiales.filter(m => m.categoria === 'piso')
+const tiposDisponibles = computed(() => productosStore.tipos)
 
-function selectMaterial(m: Material) {
-  selectedMaterial.value = m
-  showroomStep.value = 'upload'
+const productosDelTipo = computed((): ProductoCatalogo[] => {
+  if (!showroomTipo.value) return []
+  return productosStore.productos.filter((p: ProductoCatalogo) => p.tipo === showroomTipo.value)
+})
+
+const showroomColor = computed((): ColorCatalogo | null => {
+  if (!showroomProducto.value) return null
+  return showroomProducto.value.colores[showroomColorIdx.value] ?? showroomProducto.value.colores[0] ?? null
+})
+
+const puedeAvanzar = computed(() => !!showroomProducto.value && !!showroomColor.value)
+
+function selectTipo(tipo: string) {
+  showroomTipo.value = tipo
+  showroomProducto.value = null
+  showroomColorIdx.value = 0
 }
 
+function selectProducto(p: ProductoCatalogo) {
+  showroomProducto.value = p
+  showroomColorIdx.value = 0
+}
+
+// ── Manejo de archivo ──────────────────────────────────────────────────────
 function handleDrop(e: DragEvent) {
   isDragging.value = false
   const file = e.dataTransfer?.files[0]
@@ -180,19 +204,47 @@ function loadFile(file: File) {
   reader.readAsDataURL(file)
 }
 
+// ── Visualización con Gemini ───────────────────────────────────────────────
 async function runVisualization() {
+  if (!uploadedPhoto.value || !showroomProducto.value || !showroomColor.value) return
   isProcessing.value = true
-  // TODO: POST /api/visualizer { materialId: selectedMaterial.value.id, photo: uploadedPhoto.value }
-  await new Promise(r => setTimeout(r, 2200))
-  isProcessing.value = false
-  showroomStep.value = 'result'
+  processingError.value = null
+  resultImage.value = null
+
+  try {
+    const parts = uploadedPhoto.value.split(',')
+    const mimeType = parts[0]?.match(/:(.*?);/)?.[1] ?? 'image/jpeg'
+    const base64 = parts[1] ?? ''
+
+    const textureRaw = showroomColor.value.imagenes[0] ?? null
+    const textureImageUrl = textureRaw ? imageUrl(textureRaw.url) : null
+
+    resultImage.value = await generarVisualizacion({
+      imageBase64: base64,
+      mimeType,
+      tipo: showroomProducto.value.tipo,
+      subcategoria: showroomProducto.value.subcategoria,
+      colorNombre: showroomColor.value.nombre,
+      textureImageUrl,
+    })
+    showroomStep.value = 'result'
+  } catch (err) {
+    processingError.value = 'No se pudo generar la visualización. Verifica la API key o intenta de nuevo.'
+    console.error('[Gemini Showroom]', err)
+  } finally {
+    isProcessing.value = false
+  }
 }
 
 function resetShowroom() {
   showroomStep.value = 'material'
-  selectedMaterial.value = null
+  showroomTipo.value = null
+  showroomProducto.value = null
+  showroomColorIdx.value = 0
   uploadedPhoto.value = null
   isProcessing.value = false
+  processingError.value = null
+  resultImage.value = null
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 </script>
@@ -258,7 +310,7 @@ function resetShowroom() {
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-heading font-bold text-charcoal text-sm">Showroom Virtual</p>
-                <p class="text-xs text-gray-400">Visualiza materiales en tu espacio</p>
+                <p class="text-xs text-gray-400">Visualización con IA · Gemini</p>
               </div>
               <!-- Step indicator -->
               <div class="flex items-center gap-1">
@@ -279,46 +331,112 @@ function resetShowroom() {
 
             <!-- ── Paso 1: Elegir material ─────────────────────────── -->
             <Transition name="step" mode="out-in">
-              <div v-if="showroomStep === 'material'" key="step1" class="flex-1 p-5 overflow-y-auto">
-                <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider mb-3">
+              <div v-if="showroomStep === 'material'" key="step1" class="flex-1 p-5 overflow-y-auto space-y-5">
+
+                <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider">
                   1. Elige un material
                 </p>
 
-                <p class="text-xs font-heading font-semibold text-gray-400 uppercase tracking-wider mb-2">Melaminas</p>
-                <div class="grid grid-cols-4 gap-2 mb-4">
-                  <button
-                    v-for="m in melaminasList"
-                    :key="m.id"
-                    @click="selectMaterial(m)"
-                    class="group flex flex-col items-center gap-1.5 focus:outline-none"
-                  >
-                    <div
-                      class="w-full aspect-square rounded-lg border-2 border-transparent group-hover:border-gold group-hover:scale-105 transition-all duration-150 shadow-sm"
-                      :style="{ backgroundColor: m.color }"
-                    ></div>
-                    <span class="text-xs text-gray-500 group-hover:text-charcoal transition-colors text-center leading-tight">
-                      {{ m.nombre }}
-                    </span>
-                  </button>
+                <!-- Loading del catálogo -->
+                <div v-if="productosStore.loading" class="flex items-center gap-2 text-gray-400 text-xs">
+                  <div class="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
+                  Cargando catálogo...
                 </div>
 
-                <p class="text-xs font-heading font-semibold text-gray-400 uppercase tracking-wider mb-2">Pisos</p>
-                <div class="grid grid-cols-4 gap-2">
+                <template v-else>
+                  <!-- Selector de tipo (categoría) -->
+                  <div>
+                    <p class="text-xs text-gray-400 font-heading uppercase tracking-wider mb-2">Categoría</p>
+                    <div class="flex gap-2 flex-wrap">
+                      <button
+                        v-for="tipo in tiposDisponibles"
+                        :key="tipo"
+                        @click="selectTipo(tipo)"
+                        class="px-4 py-1.5 rounded-full text-xs font-heading font-semibold border transition-colors"
+                        :class="showroomTipo === tipo
+                          ? 'bg-gold text-charcoal border-gold'
+                          : 'border-gray-200 text-gray-500 hover:border-gold hover:text-charcoal'"
+                      >
+                        {{ tipo }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Selector de línea/producto -->
+                  <div v-if="showroomTipo">
+                    <p class="text-xs text-gray-400 font-heading uppercase tracking-wider mb-2">Línea</p>
+                    <div class="flex flex-col gap-2">
+                      <button
+                        v-for="p in productosDelTipo"
+                        :key="p.id"
+                        @click="selectProducto(p)"
+                        class="flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left"
+                        :class="showroomProducto?.id === p.id
+                          ? 'border-gold bg-gold/5 shadow-sm'
+                          : 'border-gray-200 hover:border-gold/50 hover:bg-gray-50'"
+                      >
+                        <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img
+                            v-if="p.colores[0]?.imagenes[0]"
+                            :src="imageUrl(p.colores[0].imagenes[0].url)"
+                            :alt="p.nombre"
+                            class="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-xs font-heading font-bold text-charcoal truncate">{{ p.nombre }}</p>
+                          <p class="text-xs text-gray-400">{{ p.colores.length }} colores</p>
+                        </div>
+                        <svg
+                          v-if="showroomProducto?.id === p.id"
+                          class="w-4 h-4 text-gold flex-shrink-0"
+                          fill="currentColor" viewBox="0 0 20 20"
+                        >
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Selector de color -->
+                  <div v-if="showroomProducto">
+                    <p class="text-xs text-gray-400 font-heading uppercase tracking-wider mb-2">Color</p>
+                    <div class="flex flex-wrap gap-1.5 mb-3">
+                      <button
+                        v-for="(color, idx) in showroomProducto.colores"
+                        :key="color.nombre"
+                        @click="showroomColorIdx = idx"
+                        class="text-[10px] font-heading px-2 py-0.5 rounded-full border transition-colors whitespace-nowrap"
+                        :class="showroomColorIdx === idx
+                          ? 'bg-gold text-charcoal border-gold'
+                          : 'border-gray-200 text-gray-500 hover:border-gold/60 hover:text-charcoal'"
+                      >
+                        {{ color.nombre }}
+                      </button>
+                    </div>
+
+                    <!-- Preview del color seleccionado -->
+                    <div v-if="showroomColor" class="rounded-xl overflow-hidden aspect-video bg-gray-100">
+                      <img
+                        v-if="showroomColor.imagenes[0]"
+                        :src="imageUrl(showroomColor.imagenes[0].url)"
+                        :alt="showroomColor.nombre"
+                        class="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Botón continuar -->
                   <button
-                    v-for="m in pisosList"
-                    :key="m.id"
-                    @click="selectMaterial(m)"
-                    class="group flex flex-col items-center gap-1.5 focus:outline-none"
+                    @click="showroomStep = 'upload'"
+                    :disabled="!puedeAvanzar"
+                    class="w-full bg-gold hover:bg-gold-dark disabled:opacity-40 disabled:cursor-not-allowed text-charcoal font-heading font-bold py-2.5 rounded-xl text-sm uppercase tracking-wider transition-colors"
                   >
-                    <div
-                      class="w-full aspect-square rounded-lg border-2 border-transparent group-hover:border-gold group-hover:scale-105 transition-all duration-150 shadow-sm"
-                      :style="{ backgroundColor: m.color }"
-                    ></div>
-                    <span class="text-xs text-gray-500 group-hover:text-charcoal transition-colors text-center leading-tight">
-                      {{ m.nombre }}
-                    </span>
+                    Continuar →
                   </button>
-                </div>
+                </template>
               </div>
             </Transition>
 
@@ -333,13 +451,17 @@ function resetShowroom() {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                   </button>
-                  <div
-                    class="w-8 h-8 rounded-lg flex-shrink-0 shadow-sm"
-                    :style="{ backgroundColor: selectedMaterial?.color }"
-                  ></div>
-                  <div>
-                    <p class="text-xs text-gray-400">Material seleccionado</p>
-                    <p class="font-heading font-bold text-charcoal text-sm">{{ selectedMaterial?.nombre }}</p>
+                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <img
+                      v-if="showroomColor?.imagenes[0]"
+                      :src="imageUrl(showroomColor.imagenes[0].url)"
+                      :alt="showroomColor.nombre"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs text-gray-400 truncate">{{ showroomProducto?.nombre }}</p>
+                    <p class="font-heading font-bold text-charcoal text-sm truncate">{{ showroomColor?.nombre }}</p>
                   </div>
                 </div>
 
@@ -385,6 +507,11 @@ function resetShowroom() {
                   </template>
                 </div>
 
+                <!-- Error -->
+                <div v-if="processingError" class="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-600">
+                  {{ processingError }}
+                </div>
+
                 <!-- Botón procesar -->
                 <button
                   @click="runVisualization"
@@ -395,7 +522,7 @@ function resetShowroom() {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
-                  {{ isProcessing ? 'Procesando con IA...' : 'Visualizar en mi espacio' }}
+                  {{ isProcessing ? 'Generando con Gemini...' : 'Visualizar en mi espacio' }}
                 </button>
               </div>
             </Transition>
@@ -404,39 +531,52 @@ function resetShowroom() {
             <Transition name="step" mode="out-in">
               <div v-if="showroomStep === 'result'" key="step3" class="flex-1 p-5 flex flex-col gap-4">
 
-                <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider">3. Tu espacio con {{ selectedMaterial?.nombre }}</p>
+                <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider">
+                  3. Tu espacio con {{ showroomColor?.nombre }}
+                </p>
 
-                <!-- Resultado: foto + overlay de color -->
+                <!-- Resultado generado por Gemini -->
                 <div class="relative rounded-xl overflow-hidden aspect-video bg-gray-100 flex-shrink-0">
-                  <img v-if="uploadedPhoto" :src="uploadedPhoto" class="w-full h-full object-cover" alt="Tu espacio"/>
-                  <!-- Overlay de color del material (placeholder hasta el backend AI) -->
-                  <div
-                    class="absolute inset-0 mix-blend-multiply opacity-35"
-                    :style="{ backgroundColor: selectedMaterial?.color }"
-                  ></div>
-                  <!-- Badge resultado -->
-                  <div class="absolute bottom-3 left-3">
+                  <img
+                    v-if="resultImage"
+                    :src="resultImage"
+                    class="w-full h-full object-cover"
+                    alt="Visualización generada"
+                  />
+                  <!-- Fallback: foto original si no hay resultado -->
+                  <img
+                    v-else-if="uploadedPhoto"
+                    :src="uploadedPhoto"
+                    class="w-full h-full object-cover"
+                    alt="Tu espacio"
+                  />
+                  <!-- Badge -->
+                  <div class="absolute bottom-3 left-3 flex items-center gap-1.5">
                     <span class="text-xs bg-black/50 text-white px-2.5 py-1 rounded-full font-heading font-semibold backdrop-blur-sm">
-                      {{ selectedMaterial?.nombre }} · Previsualización
+                      {{ showroomColor?.nombre }} · {{ showroomProducto?.nombre }}
+                    </span>
+                    <span v-if="resultImage" class="text-xs bg-gold text-charcoal px-2 py-1 rounded-full font-heading font-bold">
+                      Preview
                     </span>
                   </div>
                 </div>
 
-                <!-- Aviso placeholder -->
-                <div class="bg-gold/10 border border-gold/30 rounded-lg px-4 py-3 flex items-start gap-2">
-                  <svg class="w-4 h-4 text-gold flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                  <p class="text-xs text-charcoal leading-relaxed">
-                    Esta es una <strong>previsualización de referencia</strong>. El resultado real generado por IA estará disponible próximamente con mayor precisión.
-                  </p>
+                <!-- Comparación: miniatura del material -->
+                <div v-if="showroomColor?.imagenes[0]" class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                    <img :src="imageUrl(showroomColor.imagenes[0].url)" :alt="showroomColor.nombre" class="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-400 font-heading">Material aplicado</p>
+                    <p class="text-sm font-heading font-bold text-charcoal">{{ showroomColor.nombre }}</p>
+                    <p class="text-xs text-gray-400">{{ showroomProducto?.nombre }} · {{ showroomProducto?.tipo }}</p>
+                  </div>
                 </div>
 
                 <!-- Acciones -->
                 <div class="flex flex-col gap-2 mt-auto">
                   <button
-                    @click="showroomStep = 'material'; selectedMaterial = null; uploadedPhoto = null"
+                    @click="showroomStep = 'material'; showroomProducto = null; showroomTipo = null; uploadedPhoto = null; resultImage = null"
                     class="w-full border border-charcoal text-charcoal hover:bg-charcoal hover:text-white font-heading font-semibold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors"
                   >
                     Probar otro material
@@ -484,7 +624,6 @@ function resetShowroom() {
                 :key="msg.id"
                 :class="['flex', msg.from === 'user' ? 'justify-end' : 'justify-start']"
               >
-                <!-- Avatar bot -->
                 <div v-if="msg.from === 'bot'" class="w-7 h-7 rounded-full bg-charcoal flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
                   <svg class="w-3.5 h-3.5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

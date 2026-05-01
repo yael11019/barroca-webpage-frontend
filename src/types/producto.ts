@@ -1,3 +1,23 @@
+// Tipo del catálogo público (API /api/public/productos)
+export interface ImagenCatalogo {
+  url: string
+  legend: 'ai_render' | 'accesorios_por_separado' | null
+}
+
+export interface ColorCatalogo {
+  nombre: string
+  imagenes: ImagenCatalogo[]
+}
+
+export interface ProductoCatalogo {
+  id: number
+  nombre: string
+  tipo: string
+  subcategoria: string
+  colores: ColorCatalogo[]
+}
+
+// Tipos legacy (carrito / admin)
 export interface Variante {
   id: number
   producto_id: number

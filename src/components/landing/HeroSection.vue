@@ -12,7 +12,12 @@ const configStore = useConfigStore()
 // Tipo unificado: campos del backend + campos opcionales del placeholder local
 interface SlideDisplay {
   id: number
-  image_url: string
+  // Nuevo formato
+  desktop_url?: string
+  mobile_url?: string
+  blur_placeholder_mobile?: string
+  // Legado
+  image_url?: string
   blur_placeholder: string
   order: number
   link_url: string | null
@@ -20,6 +25,10 @@ interface SlideDisplay {
   titulo?: string
   subtitulo?: string
 }
+
+function slideDesktopUrl(s: SlideDisplay) { return s.desktop_url ?? s.image_url ?? '' }
+function slideMobileUrl(s: SlideDisplay) { return s.mobile_url ?? s.desktop_url ?? s.image_url ?? '' }
+function slideHasImage(s: SlideDisplay) { return !!(s.desktop_url ?? s.image_url) }
 
 // Placeholders locales mientras el backend no tiene imágenes subidas
 const placeholderSlides: SlideDisplay[] = [
@@ -143,13 +152,11 @@ function irACatalogo(filtro?: string) {
     <!-- ── Hero Banner ──────────────────────────────────────────────────────── -->
     <section class="relative min-h-[50vh] flex items-center justify-center bg-gold overflow-hidden">
 
-      <!-- Imagen real del backend detrás del contenido -->
-      <img
-        v-if="configStore.heroUrl"
-        :src="configStore.heroUrl"
-        alt="Imagen principal Barroca"
-        class="absolute inset-0 w-full h-full object-cover"
-      />
+      <!-- Imagen real del backend detrás del contenido (desktop/mobile) -->
+      <picture v-if="configStore.heroUrl" class="absolute inset-0 w-full h-full">
+        <source media="(max-width: 768px)" :srcset="configStore.heroMobileUrl || configStore.heroUrl" />
+        <img :src="configStore.heroUrl" alt="Imagen principal Barroca" class="w-full h-full object-cover" />
+      </picture>
 
       <!-- Sin imagen: gradiente dorado de marca -->
       <!-- Con imagen: overlay oscuro sutil solo para contraste del texto -->
@@ -163,9 +170,9 @@ function irACatalogo(filtro?: string) {
 
       <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto py-4">
         <img
-          src="/img/barroca-logo-amarillo.jpeg"
+          src="/img/barroca-logo-blanco.png"
           alt="Barroca"
-          class="h-14 md:h-20 mx-auto mb-3 rounded-lg"
+          class="h-24 md:h-36 mx-auto mb-3"
         />
 
         <!-- TODO: Reemplazar con el eslogan que proporcione Ximena -->
@@ -180,7 +187,7 @@ function irACatalogo(filtro?: string) {
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             @click="irACatalogo()"
-            class="bg-verde hover:bg-verde-light text-gold font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
+            class="bg-gold hover:bg-gold-dark text-white font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
           >
             Ver Catálogo
           </button>
@@ -209,23 +216,28 @@ function irACatalogo(filtro?: string) {
           :class="i === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'"
         >
           <!-- Imagen del backend: solo se renderiza cuando el slide ha sido alcanzado -->
-          <template v-if="slide.image_url && isSlideLoaded(i)">
-            <!-- Blur placeholder mientras carga la imagen completa -->
+          <template v-if="slideHasImage(slide) && isSlideLoaded(i)">
+            <!-- Blur placeholder mientras carga la imagen completa (desktop) -->
             <div
               v-if="slide.blur_placeholder"
-              class="absolute inset-0 bg-cover bg-center"
+              class="absolute inset-0 bg-cover bg-center hidden md:block"
               :style="{ backgroundImage: `url(${slide.blur_placeholder})` }"
             />
-            <img
-              :src="slide.image_url"
-              :alt="`Slide ${i + 1}`"
-              class="absolute inset-0 w-full h-full object-cover"
+            <!-- Blur placeholder mobile -->
+            <div
+              v-if="slide.blur_placeholder_mobile || slide.blur_placeholder"
+              class="absolute inset-0 bg-cover bg-center md:hidden"
+              :style="{ backgroundImage: `url(${slide.blur_placeholder_mobile || slide.blur_placeholder})` }"
             />
+            <picture class="absolute inset-0 w-full h-full">
+              <source media="(max-width: 768px)" :srcset="slideMobileUrl(slide)" />
+              <img :src="slideDesktopUrl(slide)" :alt="`Slide ${i + 1}`" class="w-full h-full object-cover" />
+            </picture>
           </template>
 
           <!-- Placeholder local (sin imagen de backend) -->
           <div
-            v-else-if="!slide.image_url"
+            v-else-if="!slideHasImage(slide)"
             class="w-full h-full bg-gradient-to-br flex items-end justify-center pb-12"
             :class="slide.gradiente ?? 'from-charcoal to-charcoal-light'"
           >
@@ -284,6 +296,37 @@ function irACatalogo(filtro?: string) {
           <p class="text-lg text-gray-600 max-w-2xl mx-auto">
             Explora nuestras líneas de melamina. Da clic en cada línea para ver todos los colores disponibles.
           </p>
+        </div>
+
+        <!-- Imagen representativa del catálogo cuando el backend la tiene -->
+        <div
+          v-if="configStore.catalogos['melamina']"
+          class="relative rounded-xl overflow-hidden mb-8 h-40 md:h-56 shadow-md"
+        >
+          <div
+            v-if="configStore.catalogos['melamina'].desktop_blur"
+            class="absolute inset-0 bg-cover bg-center hidden md:block"
+            :style="{ backgroundImage: `url(${configStore.catalogos['melamina'].desktop_blur})` }"
+          />
+          <div
+            v-if="configStore.catalogos['melamina'].mobile_blur || configStore.catalogos['melamina'].desktop_blur"
+            class="absolute inset-0 bg-cover bg-center md:hidden"
+            :style="{ backgroundImage: `url(${configStore.catalogos['melamina'].mobile_blur || configStore.catalogos['melamina'].desktop_blur})` }"
+          />
+          <picture class="absolute inset-0 w-full h-full">
+            <source
+              media="(max-width: 768px)"
+              :srcset="configStore.catalogos['melamina'].mobile_url || configStore.catalogos['melamina'].desktop_url"
+            />
+            <img
+              :src="configStore.catalogos['melamina'].desktop_url"
+              alt="Catálogo de Melaminas"
+              class="w-full h-full object-cover"
+            />
+          </picture>
+          <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-end px-6 pb-5">
+            <p class="text-white font-heading text-lg md:text-2xl font-bold drop-shadow">Descubre todas nuestras líneas</p>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -345,6 +388,37 @@ function irACatalogo(filtro?: string) {
           <p class="text-lg text-gray-600 max-w-2xl mx-auto">
             Desde pisos SPC hasta maderas naturales. Da clic para explorar cada línea de producto.
           </p>
+        </div>
+
+        <!-- Imagen representativa del catálogo de pisos -->
+        <div
+          v-if="configStore.catalogos['piso_spc']"
+          class="relative rounded-xl overflow-hidden mb-8 h-40 md:h-56 shadow-md"
+        >
+          <div
+            v-if="configStore.catalogos['piso_spc'].desktop_blur"
+            class="absolute inset-0 bg-cover bg-center hidden md:block"
+            :style="{ backgroundImage: `url(${configStore.catalogos['piso_spc'].desktop_blur})` }"
+          />
+          <div
+            v-if="configStore.catalogos['piso_spc'].mobile_blur || configStore.catalogos['piso_spc'].desktop_blur"
+            class="absolute inset-0 bg-cover bg-center md:hidden"
+            :style="{ backgroundImage: `url(${configStore.catalogos['piso_spc'].mobile_blur || configStore.catalogos['piso_spc'].desktop_blur})` }"
+          />
+          <picture class="absolute inset-0 w-full h-full">
+            <source
+              media="(max-width: 768px)"
+              :srcset="configStore.catalogos['piso_spc'].mobile_url || configStore.catalogos['piso_spc'].desktop_url"
+            />
+            <img
+              :src="configStore.catalogos['piso_spc'].desktop_url"
+              alt="Catálogo de Pisos"
+              class="w-full h-full object-cover"
+            />
+          </picture>
+          <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-end px-6 pb-5">
+            <p class="text-white font-heading text-lg md:text-2xl font-bold drop-shadow">Variedad en diseños y acabados</p>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">

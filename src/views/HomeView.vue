@@ -13,6 +13,7 @@ import CarritoSection from '@/components/landing/CarritoSection.vue'
 import BarrocaBotSection from '@/components/landing/BarrocaBotSection.vue'
 import AppFooter from '@/components/landing/AppFooter.vue'
 import WhatsAppButton from '@/components/landing/WhatsAppButton.vue'
+import BarrocaBotFloating from '@/components/landing/BarrocaBotFloating.vue'
 import CartDrawer from '@/components/landing/CartDrawer.vue'
 import AppointmentModal from '@/components/landing/AppointmentModal.vue'
 import WelcomeModal from '@/components/landing/WelcomeModal.vue'
@@ -27,6 +28,7 @@ const { currentSection } = useNavigation()
     <div class="h-16 md:h-20 shrink-0"></div>
     <main class="relative flex-1 overflow-hidden min-h-0">
       <WhatsAppButton />
+      <BarrocaBotFloating />
       <div v-show="currentSection === 'inicio'" class="h-full overflow-y-auto">
         <HeroSection />
         <AppFooter />

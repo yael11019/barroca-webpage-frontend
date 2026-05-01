@@ -1,6 +1,44 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import Mexico from '@svg-maps/mexico'
+import api from '@/services/api'
+
+// ── Videos de servicios ────────────────────────────────────────────────────
+interface ServiceVideo {
+  id: number
+  servicio: string
+  titulo: string
+  descripcion: string
+  tipo: 'local' | 'youtube'
+  youtube_url: string | null
+  embed_url: string | null
+  video_url: string | null
+  thumbnail_url: string | null
+  order: number
+}
+
+function getEmbedUrl(video: ServiceVideo): string | null {
+  if (video.embed_url) return video.embed_url
+  if (!video.youtube_url) return null
+  const m = video.youtube_url.match(/(?:v=|youtu\.be\/|\/embed\/)([a-zA-Z0-9_-]{11})/)
+  return m ? `https://www.youtube.com/embed/${m[1]}` : null
+}
+
+const videos = ref<ServiceVideo[]>([])
+const videosLoading = ref(false)
+const videoModal = ref<ServiceVideo | null>(null)
+
+async function fetchVideos() {
+  videosLoading.value = true
+  try {
+    const { data } = await api.get('/api/public/service-videos')
+    videos.value = data.data ?? []
+  } catch {
+    // Sin videos disponibles, la sección simplemente no aparece
+  } finally {
+    videosLoading.value = false
+  }
+}
 
 // ── Servicios ──────────────────────────────────────────────────────────────
 // tipo: 'estandar' = disponible para todos
@@ -106,6 +144,8 @@ const proximamente = [
   { nombre: 'Catálogo Digital 3D', icono: 'catalogo' },
   { nombre: 'Seguimiento de Pedido', icono: 'tracking' },
 ]
+
+onMounted(fetchVideos)
 
 // ── Modal cotización ───────────────────────────────────────────────────────
 const modalOpen = ref(false)
@@ -251,6 +291,59 @@ function submitForm() {
           Los servicios marcados como <strong class="text-charcoal">Cotización</strong> son específicos y su precio
           varía según las dimensiones, materiales y zona de instalación. Contáctanos para recibir una propuesta personalizada.
         </p>
+      </div>
+    </div>
+
+    <!-- ── Videos de servicios ───────────────────────────────────────────── -->
+    <div v-if="videosLoading || videos.length > 0" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div class="text-center mb-10">
+        <p class="font-heading text-gold text-sm font-semibold uppercase tracking-widest mb-2">En acción</p>
+        <h3 class="font-heading text-2xl md:text-3xl font-bold text-charcoal mb-2">Mira cómo trabajamos</h3>
+        <div class="w-16 h-1 bg-gold mx-auto"></div>
+      </div>
+
+      <!-- Skeleton carga -->
+      <div v-if="videosLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-for="n in 3" :key="n" class="bg-gray-100 rounded-xl animate-pulse aspect-video"></div>
+      </div>
+
+      <!-- Grid de videos -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <button
+          v-for="video in videos"
+          :key="video.id"
+          @click="videoModal = video"
+          class="group relative rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 bg-charcoal text-left"
+        >
+          <!-- Thumbnail -->
+          <div class="relative aspect-video overflow-hidden">
+            <img
+              v-if="video.thumbnail_url"
+              :src="video.thumbnail_url"
+              :alt="video.titulo"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            />
+            <div v-else class="w-full h-full bg-charcoal/80 flex items-center justify-center">
+              <svg class="w-12 h-12 text-gold/40" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+            <!-- Overlay con play -->
+            <div class="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+              <div class="w-14 h-14 rounded-full bg-gold flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-charcoal ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <!-- Info -->
+          <div class="p-4">
+            <p class="font-heading font-bold text-white text-sm leading-tight mb-1">{{ video.titulo }}</p>
+            <p v-if="video.descripcion" class="text-gray-400 text-xs leading-relaxed line-clamp-2">{{ video.descripcion }}</p>
+          </div>
+        </button>
       </div>
     </div>
 
@@ -400,6 +493,55 @@ function submitForm() {
     </div>
 
   </section>
+
+  <!-- ── Modal de video ────────────────────────────────────────────────── -->
+  <Transition name="fade">
+    <div v-if="videoModal" class="fixed inset-0 bg-black/80 z-[60]" @click="videoModal = null" />
+  </Transition>
+  <Transition name="modal">
+    <div
+      v-if="videoModal"
+      class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      @click.self="videoModal = null"
+    >
+      <div class="bg-charcoal rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-white/10">
+          <p class="font-heading font-bold text-white text-sm truncate">{{ videoModal.titulo }}</p>
+          <button @click="videoModal = null" class="text-white/50 hover:text-white transition-colors p-1 flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="relative w-full" style="padding-bottom: 56.25%">
+          <!-- Video local (.mov / .mp4) -->
+          <video
+            v-if="videoModal.tipo === 'local' && videoModal.video_url"
+            :src="videoModal.video_url"
+            class="absolute inset-0 w-full h-full bg-black"
+            controls
+            autoplay
+            playsinline
+          />
+          <!-- Video de YouTube -->
+          <iframe
+            v-else-if="getEmbedUrl(videoModal)"
+            :src="`${getEmbedUrl(videoModal)}?autoplay=1&rel=0`"
+            class="absolute inset-0 w-full h-full"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          />
+          <div v-else class="absolute inset-0 flex items-center justify-center bg-black/60">
+            <p class="text-white/60 text-sm font-heading">Video no disponible</p>
+          </div>
+        </div>
+        <div v-if="videoModal.descripcion" class="px-5 py-4">
+          <p class="text-gray-400 text-sm leading-relaxed">{{ videoModal.descripcion }}</p>
+        </div>
+      </div>
+    </div>
+  </Transition>
 
   <!-- ── Modal cotización ────────────────────────────────────────────────── -->
   <Transition name="fade">

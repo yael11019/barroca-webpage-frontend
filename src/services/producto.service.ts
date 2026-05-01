@@ -1,9 +1,9 @@
 import api from './api'
-import type { Producto, Variante } from '@/types/producto'
+import type { ProductoCatalogo, Producto, Variante } from '@/types/producto'
 
 export const productoService = {
-  async getAll(): Promise<Producto[]> {
-    const { data } = await api.get<Producto[]>('/api/public/productos')
+  async getAll(): Promise<ProductoCatalogo[]> {
+    const { data } = await api.get<ProductoCatalogo[]>('/api/public/productos')
     return data
   },
 

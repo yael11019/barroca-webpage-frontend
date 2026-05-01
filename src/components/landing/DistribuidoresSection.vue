@@ -15,26 +15,38 @@ function submitForm() {
   setTimeout(() => {
     modalOpen.value = false
     formEnviado.value = false
+    modalEsPrimerDistrib.value = false
     Object.assign(form, { nombre: '', empresa: '', negocio: '', correo: '', telefono: '', direccion: '' })
   }, 2500)
 }
 
-function cerrarModal() { modalOpen.value = false; formEnviado.value = false }
+function cerrarModal() { modalOpen.value = false; formEnviado.value = false; modalEsPrimerDistrib.value = false }
+
+function abrirModalPrimerDistrib() { modalEsPrimerDistrib.value = true; modalOpen.value = true }
 
 // ── Estados con cobertura ──────────────────────────────────────────────────
 const estadosConCobertura = ['cmx', 'mex', 'pue', 'mor', 'hid', 'que', 'gua', 'tla']
 
 const estadoSeleccionado = ref<string | null>(null)
+const estadoSinCoberturaSeleccionado = ref<string | null>(null)
 const hoveredState = ref<string | null>(null)
+const modalEsPrimerDistrib = ref(false)
 
 function toggleEstado(id: string) {
-  if (!estadosConCobertura.includes(id)) return
-  estadoSeleccionado.value = estadoSeleccionado.value === id ? null : id
+  if (estadosConCobertura.includes(id)) {
+    estadoSinCoberturaSeleccionado.value = null
+    estadoSeleccionado.value = estadoSeleccionado.value === id ? null : id
+  } else {
+    estadoSeleccionado.value = null
+    estadoSinCoberturaSeleccionado.value = estadoSinCoberturaSeleccionado.value === id ? null : id
+  }
 }
 
 function fillEstado(id: string): string {
   if (estadoSeleccionado.value === id) return '#E6BD1F'
+  if (estadoSinCoberturaSeleccionado.value === id) return '#B0B4BB'
   if (estadosConCobertura.includes(id)) return '#FFD225'
+  if (hoveredState.value === id) return '#C0C4CB'
   return '#D1D5DB'
 }
 
@@ -106,6 +118,11 @@ const distribuidoresFiltrados = computed(() =>
 const nombreEstado = computed(() => {
   if (!estadoSeleccionado.value) return 'Todos los estados'
   return Mexico.locations.find((l: { id: string; name: string }) => l.id === estadoSeleccionado.value)?.name ?? estadoSeleccionado.value
+})
+
+const nombreEstadoSinCobertura = computed(() => {
+  if (!estadoSinCoberturaSeleccionado.value) return ''
+  return Mexico.locations.find((l: { id: string; name: string }) => l.id === estadoSinCoberturaSeleccionado.value)?.name ?? estadoSinCoberturaSeleccionado.value
 })
 
 // Chips: nombre legible de cada estado con cobertura
@@ -201,18 +218,35 @@ const chipsCobertura = estadosConCobertura.map(id => ({
           <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div class="flex items-center justify-between mb-4">
               <h4 class="font-heading font-bold text-charcoal text-sm uppercase tracking-wider leading-tight">
-                {{ nombreEstado }}
+                {{ estadoSinCoberturaSeleccionado ? nombreEstadoSinCobertura : nombreEstado }}
               </h4>
               <button
-                v-if="estadoSeleccionado"
-                @click="estadoSeleccionado = null"
+                v-if="estadoSeleccionado || estadoSinCoberturaSeleccionado"
+                @click="estadoSeleccionado = null; estadoSinCoberturaSeleccionado = null"
                 class="text-xs text-gold hover:text-gold-dark font-semibold transition-colors whitespace-nowrap ml-2"
               >
                 Ver todos
               </button>
             </div>
 
-            <div v-if="distribuidoresFiltrados.length === 0" class="py-8 text-center">
+            <!-- Estado sin cobertura -->
+            <div v-if="estadoSinCoberturaSeleccionado" class="py-8 text-center">
+              <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <p class="text-gray-500 text-sm mb-1">Aún no hay distribuidores en este estado.</p>
+              <p class="text-gray-400 text-xs mb-5">¿Te interesa ser el primero?</p>
+              <button
+                @click="abrirModalPrimerDistrib"
+                class="inline-flex items-center gap-2 bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold px-4 py-2 rounded-lg transition-colors text-xs uppercase tracking-wider"
+              >
+                Quiero ser el primero
+              </button>
+            </div>
+
+            <div v-else-if="distribuidoresFiltrados.length === 0" class="py-8 text-center">
               <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -359,7 +393,7 @@ const chipsCobertura = estadosConCobertura.map(id => ({
                   stroke="white"
                   stroke-width="1"
                   stroke-linejoin="round"
-                  :class="estadosConCobertura.includes(state.id) ? 'cursor-pointer' : 'cursor-default'"
+                  class="cursor-pointer"
                   style="transition: fill 0.15s"
                   @click="toggleEstado(state.id)"
                   @mouseenter="hoveredState = state.id"
@@ -417,25 +451,6 @@ const chipsCobertura = estadosConCobertura.map(id => ({
       </div>
     </div>
 
-    <!-- ── CTA final ───────────────────────────────────────────────────── -->
-    <div class="bg-charcoal">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
-        <h3 class="font-heading text-2xl md:text-3xl font-bold text-white mb-3">¿Quieres ser distribuidor?</h3>
-        <p class="text-gray-400 mb-7 max-w-md mx-auto">
-          Forma parte de nuestra red y accede a los mejores materiales de cantera y mármol del mercado.
-        </p>
-        <button
-          @click="modalOpen = true"
-          class="inline-flex items-center gap-2 bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold px-8 py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider"
-        >
-          Contáctanos
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
   </section>
 
   <!-- ── Modal ──────────────────────────────────────────────────────────── -->
@@ -451,7 +466,9 @@ const chipsCobertura = estadosConCobertura.map(id => ({
     >
       <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 class="font-heading text-lg font-bold text-charcoal">Solicitud de distribuidor</h2>
+          <h2 class="font-heading text-lg font-bold text-charcoal">
+            {{ modalEsPrimerDistrib ? `Sé el primer distribuidor en ${nombreEstadoSinCobertura}` : 'Solicitud de distribuidor' }}
+          </h2>
           <button @click="cerrarModal" class="p-2 text-gray-400 hover:text-charcoal transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

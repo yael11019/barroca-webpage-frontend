@@ -1,26 +1,30 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { productoService } from '@/services/producto.service'
-import type { Producto } from '@/types/producto'
+import type { ProductoCatalogo } from '@/types/producto'
 
 export const useProductosStore = defineStore('productos', () => {
-  const productos = ref<Producto[]>([])
+  const productos = ref<ProductoCatalogo[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  const productosPorCategoria = computed(() => {
-    const grouped: Record<string, Producto[]> = {}
-    for (const producto of productos.value) {
-      if (!producto.activo) continue
-      if (!grouped[producto.categoria]) {
-        grouped[producto.categoria] = []
+  // Tipos únicos (MELAMINA, PISO, …) en el orden que llegan del API
+  // Filtra productos con tipo null/undefined que vienen del backend
+  const tipos = computed(() => {
+    const seen = new Set<string>()
+    const result: string[] = []
+    for (const p of productos.value) {
+      if (!p.tipo) continue
+      if (!seen.has(p.tipo)) {
+        seen.add(p.tipo)
+        result.push(p.tipo)
       }
-      grouped[producto.categoria]!.push(producto)
     }
-    return grouped
+    return result
   })
 
-  const categorias = computed(() => Object.keys(productosPorCategoria.value))
+  // Alias para compatibilidad con código anterior
+  const categorias = computed(() => tipos.value)
 
   async function fetchProductos() {
     loading.value = true
@@ -28,7 +32,7 @@ export const useProductosStore = defineStore('productos', () => {
     try {
       productos.value = await productoService.getAll()
     } catch (e) {
-      error.value = 'Error al cargar los productos. Intente de nuevo mas tarde.'
+      error.value = 'Error al cargar los productos. Intente de nuevo más tarde.'
       console.error('Failed to fetch productos:', e)
     } finally {
       loading.value = false
@@ -39,7 +43,7 @@ export const useProductosStore = defineStore('productos', () => {
     productos,
     loading,
     error,
-    productosPorCategoria,
+    tipos,
     categorias,
     fetchProductos,
   }
