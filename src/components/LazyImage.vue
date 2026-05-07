@@ -34,8 +34,8 @@ function onLoad() { loaded.value = true }
       <img
         :src="blur || mobileBlur"
         alt=""
-        class="absolute inset-0 w-full h-full object-cover scale-110 blur-md transition-opacity duration-500"
-        :class="loaded ? 'opacity-0' : 'opacity-100'"
+        class="lazy-img-blur absolute inset-0 w-full h-full object-cover"
+        :class="{ 'lazy-img-blur--hidden': loaded }"
       />
     </picture>
 
@@ -48,9 +48,28 @@ function onLoad() { loaded.value = true }
         :fetchpriority="fetchpriority"
         :decoding="decoding"
         @load="onLoad"
-        class="relative w-full h-full object-cover transition-opacity duration-500"
-        :class="[imgClass, loaded ? 'opacity-100' : 'opacity-0']"
+        class="lazy-img-main relative w-full h-full object-cover"
+        :class="[imgClass, { 'lazy-img-main--loaded': loaded }]"
       />
     </picture>
   </div>
 </template>
+
+<style scoped>
+.lazy-img-blur {
+  transform: scale(1.1);
+  filter: blur(20px);
+  opacity: 1;
+  transition: opacity 0.4s ease-out;
+}
+.lazy-img-blur--hidden {
+  opacity: 0;
+}
+.lazy-img-main {
+  opacity: 0;
+  transition: opacity 0.4s ease-out, transform 0.3s ease;
+}
+.lazy-img-main--loaded {
+  opacity: 1;
+}
+</style>

@@ -334,13 +334,12 @@ async function submitForm() {
         >
           <!-- Thumbnail -->
           <div class="relative aspect-video overflow-hidden">
-            <img
+            <LazyImage
               v-if="video.thumbnail_url"
               :src="video.thumbnail_url"
               :alt="video.titulo"
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-              decoding="async"
+              class="w-full h-full"
+              img-class="group-hover:scale-105"
             />
             <div v-else class="w-full h-full bg-charcoal/80 flex items-center justify-center">
               <svg class="w-12 h-12 text-gold/40" fill="currentColor" viewBox="0 0 24 24">
@@ -533,14 +532,12 @@ async function submitForm() {
         </div>
         <div class="relative w-full" style="padding-bottom: 56.25%">
           <!-- Video local (.mov / .mp4) -->
-          <video
+          <LazyVideo
             v-if="videoModal.tipo === 'local' && videoModal.video_url"
             :src="videoModal.video_url"
-            class="absolute inset-0 w-full h-full bg-black"
-            controls
+            :poster="videoModal.thumbnail_url ?? undefined"
             autoplay
-            playsinline
-            preload="none"
+            class="absolute inset-0 !w-full !h-full"
           />
           <!-- Video de YouTube -->
           <iframe

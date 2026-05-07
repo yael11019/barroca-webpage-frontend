@@ -6,8 +6,13 @@ import { createGtag } from 'vue-gtag'
 
 import App from './App.vue'
 import router from './router'
+import LazyImage from '@/components/LazyImage.vue'
+import LazyVideo from '@/components/LazyVideo.vue'
 
 const app = createApp(App)
+
+app.component('LazyImage', LazyImage)
+app.component('LazyVideo', LazyVideo)
 
 app.use(createPinia())
 app.use(router)

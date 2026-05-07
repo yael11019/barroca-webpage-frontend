@@ -3,7 +3,6 @@ import { ref, computed, reactive } from 'vue'
 import Mexico from '@svg-maps/mexico'
 import { useConfigStore } from '@/stores/config'
 import api from '@/services/api'
-import LazyImage from '@/components/LazyImage.vue'
 
 const configStore = useConfigStore()
 

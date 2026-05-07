@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNavigation } from '@/composables/useNavigation'
 import { useConfigStore } from '@/stores/config'
-import LazyImage from '@/components/LazyImage.vue'
 
 const { navigateTo } = useNavigation()
 const configStore = useConfigStore()

@@ -210,13 +210,12 @@ onMounted(() => {
             class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 text-left"
           >
             <div class="aspect-square bg-gray-100 overflow-hidden">
-              <img
+              <LazyImage
                 v-if="color.imagenes.length"
                 :src="imageUrl(color.imagenes[0]?.url ?? '')"
                 :alt="`${producto.nombre} — ${color.nombre}`"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-                decoding="async"
+                class="w-full h-full"
+                img-class="group-hover:scale-105"
               />
               <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,13 +358,12 @@ onMounted(() => {
 
             <!-- Imagen principal -->
             <div class="rounded-xl overflow-hidden aspect-square bg-gray-100">
-              <img
+              <LazyImage
                 v-if="modalColor?.imagenes.length"
                 :src="imageUrl(modalColor.imagenes[modalImageIdx]?.url ?? '')"
                 :alt="`${selectedProducto.nombre} — ${modalColor.nombre}`"
-                class="w-full h-full object-cover"
                 loading="eager"
-                decoding="async"
+                class="w-full h-full"
               />
               <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
                 <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -405,7 +403,7 @@ onMounted(() => {
                 class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors"
                 :class="modalImageIdx === idx ? 'border-gold' : 'border-transparent hover:border-gray-300'"
               >
-                <img :src="imageUrl(img.url)" :alt="`${modalColor.nombre} ${idx + 1}`" class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                <LazyImage :src="imageUrl(img.url)" :alt="`${modalColor.nombre} ${idx + 1}`" class="w-full h-full" />
               </button>
             </div>
 
