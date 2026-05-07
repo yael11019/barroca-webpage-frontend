@@ -12,8 +12,8 @@ export interface ColorCatalogo {
 export interface ProductoCatalogo {
   id: number
   nombre: string
-  tipo: string
-  subcategoria: string
+  tipo: string | null
+  subcategoria: string | null
   colores: ColorCatalogo[]
 }
 

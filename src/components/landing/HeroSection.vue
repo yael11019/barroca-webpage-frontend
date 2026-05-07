@@ -2,9 +2,12 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNavigation } from '@/composables/useNavigation'
 import { useConfigStore } from '@/stores/config'
+import { useProductosStore } from '@/stores/productos'
+import { imageUrl } from '@/utils/imageUrl'
 
 const { navigateTo } = useNavigation()
 const configStore = useConfigStore()
+const productosStore = useProductosStore()
 
 // ── Hero ─────────────────────────────────────────────────────────────────────
 
@@ -100,27 +103,55 @@ let timer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   timer = setInterval(next, 5000)
+  productosStore.fetchProductos()
 })
 onUnmounted(() => {
   if (timer) clearInterval(timer)
 })
 
-// ── Líneas de Melamina ────────────────────────────────────────────────────────
-// TODO: Fetch desde backend GET /api/public/lineas?categoria=melamina
-const lineasMelamina = [
-  { id: 'premium', nombre: 'Línea Premium', imagen: '', descripcion: '24 colores disponibles', bg: 'bg-stone-200' },
-  { id: 'clasica', nombre: 'Línea Clásica', imagen: '', descripcion: '18 colores disponibles', bg: 'bg-amber-100' },
-  { id: 'maderas', nombre: 'Línea Maderas', imagen: '', descripcion: '20 tonos de madera', bg: 'bg-amber-700' },
-  { id: 'unicolores', nombre: 'Unicolores', imagen: '', descripcion: '32 colores sólidos', bg: 'bg-slate-400' },
-]
+// ── Líneas desde el backend ───────────────────────────────────────────────────
+const MELAMINA_BGS = ['bg-stone-200', 'bg-amber-100', 'bg-amber-700', 'bg-slate-400', 'bg-stone-400', 'bg-amber-200']
+const PISO_BGS    = ['bg-stone-500', 'bg-stone-300', 'bg-amber-900', 'bg-stone-600']
 
-// ── Líneas de Pisos ───────────────────────────────────────────────────────────
-// TODO: Fetch desde backend GET /api/public/lineas?categoria=piso
-const lineasPisos = [
-  { id: 'spc', nombre: 'Pisos SPC', imagen: '', descripcion: '15 diseños', bg: 'bg-stone-500' },
-  { id: 'vinil', nombre: 'Vinil en Rollo', imagen: '', descripcion: '12 diseños', bg: 'bg-stone-300' },
-  { id: 'madera-solida', nombre: 'Madera Natural', imagen: '', descripcion: '8 especies', bg: 'bg-amber-900' },
-]
+const lineasMelamina = computed(() => {
+  const map = new Map<string, { imagen: string; totalColores: number }>()
+  for (const p of productosStore.productos) {
+    if (p.tipo !== 'MELAMINA') continue
+    const sub = p.subcategoria || 'Otros'
+    if (!map.has(sub)) map.set(sub, { imagen: '', totalColores: 0 })
+    const entry = map.get(sub)!
+    entry.totalColores += p.colores.length
+    if (!entry.imagen && p.colores[0]?.imagenes[0]?.url)
+      entry.imagen = imageUrl(p.colores[0].imagenes[0].url)
+  }
+  return Array.from(map.entries()).map(([nombre, data], i) => ({
+    nombre,
+    imagen: data.imagen,
+    descripcion: `${data.totalColores} colores`,
+    bg: MELAMINA_BGS[i % MELAMINA_BGS.length],
+    tipo: 'melamina',
+  }))
+})
+
+const lineasPisos = computed(() => {
+  const map = new Map<string, { imagen: string; totalColores: number; tipo: string }>()
+  for (const p of productosStore.productos) {
+    if (p.tipo === 'MELAMINA') continue
+    const sub = p.subcategoria || p.tipo || 'Otros'
+    if (!map.has(sub)) map.set(sub, { imagen: '', totalColores: 0, tipo: p.tipo })
+    const entry = map.get(sub)!
+    entry.totalColores += p.colores.length
+    if (!entry.imagen && p.colores[0]?.imagenes[0]?.url)
+      entry.imagen = imageUrl(p.colores[0].imagenes[0].url)
+  }
+  return Array.from(map.entries()).map(([nombre, data], i) => ({
+    nombre,
+    imagen: data.imagen,
+    descripcion: `${data.totalColores} colores`,
+    bg: PISO_BGS[i % PISO_BGS.length],
+    tipo: data.tipo.toLowerCase(),
+  }))
+})
 
 // ── Por qué Barroca ───────────────────────────────────────────────────────────
 const razones = [
@@ -155,7 +186,7 @@ function irACatalogo(filtro?: string) {
       <!-- Imagen real del backend detrás del contenido (desktop/mobile) -->
       <picture v-if="configStore.heroUrl" class="absolute inset-0 w-full h-full">
         <source media="(max-width: 768px)" :srcset="configStore.heroMobileUrl || configStore.heroUrl" />
-        <img :src="configStore.heroUrl" alt="Imagen principal Barroca" class="w-full h-full object-cover" />
+        <img :src="configStore.heroUrl" alt="Imagen principal Barroca" class="w-full h-full object-cover" fetchpriority="high" decoding="auto" />
       </picture>
 
       <!-- Sin imagen: gradiente dorado de marca -->
@@ -173,6 +204,8 @@ function irACatalogo(filtro?: string) {
           src="/img/barroca-logo-blanco.png"
           alt="Barroca"
           class="h-24 md:h-36 mx-auto mb-3"
+          fetchpriority="high"
+          decoding="auto"
         />
 
         <!-- TODO: Reemplazar con el eslogan que proporcione Ximena -->
@@ -180,8 +213,8 @@ function irACatalogo(filtro?: string) {
           class="font-heading text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4"
           :class="configStore.heroUrl ? 'text-white' : 'text-verde'"
         >
-          Diseño que inspira,<br>
-          <span :class="configStore.heroUrl ? 'text-white/80' : 'text-verde/80'">calidad que trasciende.</span>
+          Transformando lo ordinario<br>
+          <span :class="configStore.heroUrl ? 'text-white/80' : 'text-verde/80'">en extraordinario.</span>
         </h1>
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -231,7 +264,14 @@ function irACatalogo(filtro?: string) {
             />
             <picture class="absolute inset-0 w-full h-full">
               <source media="(max-width: 768px)" :srcset="slideMobileUrl(slide)" />
-              <img :src="slideDesktopUrl(slide)" :alt="`Slide ${i + 1}`" class="w-full h-full object-cover" />
+              <img
+                :src="slideDesktopUrl(slide)"
+                :alt="`Slide ${i + 1}`"
+                class="w-full h-full object-cover"
+                :fetchpriority="i === 0 ? 'high' : 'low'"
+                :loading="i === 0 ? 'eager' : 'lazy'"
+                decoding="async"
+              />
             </picture>
           </template>
 
@@ -329,11 +369,16 @@ function irACatalogo(filtro?: string) {
           </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <!-- Skeleton mientras cargan los productos -->
+        <div v-if="productosStore.loading && !lineasMelamina.length" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <div v-for="n in 4" :key="n" class="aspect-square rounded-xl bg-gray-200 animate-pulse"></div>
+        </div>
+
+        <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           <button
             v-for="linea in lineasMelamina"
-            :key="linea.id"
-            @click="irACatalogo('melamina:' + linea.id)"
+            :key="linea.nombre"
+            @click="irACatalogo(linea.tipo)"
             class="group relative rounded-xl overflow-hidden aspect-square shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
           >
             <img
@@ -342,6 +387,7 @@ function irACatalogo(filtro?: string) {
               :alt="linea.nombre"
               class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
             <div
               v-else
@@ -421,11 +467,16 @@ function irACatalogo(filtro?: string) {
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <!-- Skeleton mientras cargan los productos -->
+        <div v-if="productosStore.loading && !lineasPisos.length" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div v-for="n in 3" :key="n" class="h-64 md:h-80 rounded-xl bg-gray-200 animate-pulse"></div>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <button
             v-for="linea in lineasPisos"
-            :key="linea.id"
-            @click="irACatalogo('piso:' + linea.id)"
+            :key="linea.nombre"
+            @click="irACatalogo(linea.tipo)"
             class="group relative rounded-xl overflow-hidden h-64 md:h-80 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
           >
             <img
@@ -434,6 +485,7 @@ function irACatalogo(filtro?: string) {
               :alt="linea.nombre"
               class="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
             <div
               v-else
@@ -462,7 +514,7 @@ function irACatalogo(filtro?: string) {
 
         <div class="text-center mt-8">
           <button
-            @click="irACatalogo('piso')"
+            @click="irACatalogo()"
             class="inline-flex items-center gap-2 bg-charcoal hover:bg-charcoal-light text-gold font-heading font-bold uppercase tracking-wider px-8 py-3 rounded transition-colors duration-200"
           >
             Ver todo el catálogo de pisos

@@ -3,6 +3,14 @@ import { ref, onMounted } from 'vue'
 import Mexico from '@svg-maps/mexico'
 import api from '@/services/api'
 
+const SERVICIO_API_KEY: Record<string, 'corte' | 'enchapado' | 'afilado' | 'otro'> = {
+  cortes:     'corte',
+  cubrecantos:'enchapado',
+  afilado:    'afilado',
+  envio:      'otro',
+  asesoria:   'otro',
+}
+
 // ── Videos de servicios ────────────────────────────────────────────────────
 interface ServiceVideo {
   id: number
@@ -29,6 +37,7 @@ const videosLoading = ref(false)
 const videoModal = ref<ServiceVideo | null>(null)
 
 async function fetchVideos() {
+  if (videosLoading.value) return
   videosLoading.value = true
   try {
     const { data } = await api.get('/api/public/service-videos')
@@ -41,64 +50,53 @@ async function fetchVideos() {
 }
 
 // ── Servicios ──────────────────────────────────────────────────────────────
-// tipo: 'estandar' = disponible para todos
-//       'cotizacion' = específico, requiere consulta
-//       'proximo' = en desarrollo
+// tipo: 'estandar'  = disponible para todos
+//       'exclusivo' = exclusivo de Melaminas Barroca
 const servicios = [
   {
-    id: 'melaminas',
-    nombre: 'Venta de Melaminas',
-    descripcion: 'Amplio catálogo de melaminas en diseños y acabados premium. Colores sólidos, vetas de madera, texturas metálicas y más de 200 referencias disponibles.',
+    id: 'envio',
+    nombre: 'Envío',
+    descripcion: 'Entregamos tu pedido directo donde lo necesites. Servicio disponible exclusivamente en compras realizadas con nosotros.',
     tipo: 'estandar',
-    etiqueta: 'Disponible',
-    // TODO: reemplazar con imagen real
+    etiqueta: 'Solo en compra con nosotros',
     imagen: '',
-    iconColor: 'from-amber-100 to-amber-50',
+    iconColor: 'from-blue-100 to-blue-50',
   },
   {
-    id: 'pisos',
-    nombre: 'Pisos SPC y Vinílicos',
-    descripcion: 'Pisos de alta durabilidad con resistencia al agua, arañazos y tráfico intenso. Instalación disponible en zona metropolitana.',
+    id: 'afilado',
+    nombre: 'Afilado de Discos',
+    descripcion: 'Servicio de afilado profesional de discos de corte. Disponible para todos a través de nuestro aliado Afilados del Bajío.',
     tipo: 'estandar',
-    etiqueta: 'Disponible',
+    etiqueta: 'Servicio para todos',
     imagen: '',
     iconColor: 'from-stone-100 to-stone-50',
   },
   {
-    id: 'corte',
-    nombre: 'Corte a Medida',
-    descripcion: 'Cortes personalizados con tolerancias exactas para tu proyecto. Solicita una cotización con tus planos o medidas.',
-    tipo: 'cotizacion',
-    etiqueta: 'Cotización',
+    id: 'cubrecantos',
+    nombre: 'Enchapado de Cubrecantos',
+    descripcion: 'Servicio de enchapado de cubrecantos con acabado perfecto para tus tableros. Exclusivo de Melaminas Barroca.',
+    tipo: 'exclusivo',
+    etiqueta: 'Exclusivo Barroca',
     imagen: '',
-    iconColor: 'from-blue-50 to-slate-50',
+    iconColor: 'from-amber-100 to-amber-50',
   },
   {
-    id: 'instalacion',
-    nombre: 'Instalación Profesional',
-    descripcion: 'Equipo certificado para instalación de pisos, recubrimientos y tableros. Disponible según zona y proyecto.',
-    tipo: 'cotizacion',
-    etiqueta: 'Cotización',
+    id: 'cortes',
+    nombre: 'Cortes a Medida',
+    descripcion: 'Cortes precisos según tus especificaciones. Servicio exclusivo de Melaminas Barroca para proyectos a la medida.',
+    tipo: 'exclusivo',
+    etiqueta: 'Exclusivo Barroca',
     imagen: '',
     iconColor: 'from-emerald-50 to-teal-50',
   },
   {
     id: 'asesoria',
-    nombre: 'Asesoría de Diseño',
-    descripcion: 'Nuestros especialistas te ayudan a elegir los materiales ideales según estilo, presupuesto y funcionalidad del espacio.',
+    nombre: 'Asesoría Personalizada',
+    descripcion: 'Solicita una visita a tu negocio. Nuestro equipo va a tu espacio para asesorarte en la elección de materiales. Disponible para cualquier persona.',
     tipo: 'estandar',
     etiqueta: 'Disponible',
     imagen: '',
     iconColor: 'from-purple-50 to-violet-50',
-  },
-  {
-    id: 'proyectos',
-    nombre: 'Proyectos Especiales',
-    descripcion: 'Soluciones integrales para desarrolladores, arquitectos y contratistas con grandes volúmenes o especificaciones únicas.',
-    tipo: 'cotizacion',
-    etiqueta: 'Cotización',
-    imagen: '',
-    iconColor: 'from-orange-50 to-red-50',
   },
 ]
 
@@ -150,13 +148,17 @@ onMounted(fetchVideos)
 // ── Modal cotización ───────────────────────────────────────────────────────
 const modalOpen = ref(false)
 const servicioSeleccionado = ref('')
+const servicioIdSeleccionado = ref('')
 
-function abrirCotizacion(nombre: string) {
+function abrirCotizacion(id: string, nombre: string) {
+  servicioIdSeleccionado.value = id
   servicioSeleccionado.value = nombre
   modalOpen.value = true
 }
 
 const formEnviado = ref(false)
+const formLoading = ref(false)
+const formError = ref<string | null>(null)
 const form = {
   nombre: ref(''),
   correo: ref(''),
@@ -164,16 +166,31 @@ const form = {
   mensaje: ref(''),
 }
 
-function submitForm() {
-  formEnviado.value = true
-  setTimeout(() => {
-    modalOpen.value = false
-    formEnviado.value = false
-    form.nombre.value = ''
-    form.correo.value = ''
-    form.telefono.value = ''
-    form.mensaje.value = ''
-  }, 2500)
+async function submitForm() {
+  formLoading.value = true
+  formError.value = null
+  try {
+    await api.post('/api/public/cotizacion-servicio', {
+      nombre:      form.nombre.value,
+      telefono:    form.telefono.value,
+      email:       form.correo.value || undefined,
+      servicio:    SERVICIO_API_KEY[servicioIdSeleccionado.value] ?? 'otro',
+      descripcion: form.mensaje.value || undefined,
+    })
+    formEnviado.value = true
+    setTimeout(() => {
+      modalOpen.value = false
+      formEnviado.value = false
+      form.nombre.value = ''
+      form.correo.value = ''
+      form.telefono.value = ''
+      form.mensaje.value = ''
+    }, 2500)
+  } catch {
+    formError.value = 'No se pudo enviar la solicitud. Intenta de nuevo.'
+  } finally {
+    formLoading.value = false
+  }
 }
 </script>
 
@@ -201,38 +218,32 @@ function submitForm() {
         >
           <!-- Imagen / placeholder -->
           <div :class="`relative h-44 bg-gradient-to-br ${s.iconColor} flex items-center justify-center`">
-            <!-- TODO: reemplazar el div de abajo por <img :src="s.imagen" /> cuando haya imágenes -->
             <div class="flex flex-col items-center gap-2 opacity-40">
 
-              <!-- Ícono melaminas -->
-              <svg v-if="s.id === 'melaminas'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <!-- Ícono envío -->
+              <svg v-if="s.id === 'envio'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+                  d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
               </svg>
-              <!-- Ícono pisos -->
-              <svg v-else-if="s.id === 'pisos'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M3 10h18M3 14h18M10 3v18M14 3v18M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6z"/>
-              </svg>
-              <!-- Ícono corte -->
-              <svg v-else-if="s.id === 'corte'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/>
-              </svg>
-              <!-- Ícono instalación -->
-              <svg v-else-if="s.id === 'instalacion'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <!-- Ícono afilado de discos -->
+              <svg v-else-if="s.id === 'afilado'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               </svg>
-              <!-- Ícono asesoría -->
-              <svg v-else-if="s.id === 'asesoria'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <!-- Ícono cubrecantos -->
+              <svg v-else-if="s.id === 'cubrecantos'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                  d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
               </svg>
-              <!-- Ícono proyectos -->
+              <!-- Ícono cortes a medida -->
+              <svg v-else-if="s.id === 'cortes'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/>
+              </svg>
+              <!-- Ícono asesoría -->
               <svg v-else class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
               </svg>
 
               <span class="text-xs font-heading font-semibold uppercase tracking-widest">Imagen próximamente</span>
@@ -243,9 +254,7 @@ function submitForm() {
               <span
                 :class="[
                   'text-xs font-heading font-bold px-2.5 py-1 rounded-full',
-                  s.tipo === 'estandar'   ? 'bg-gold text-charcoal' :
-                  s.tipo === 'cotizacion' ? 'bg-charcoal text-white' :
-                                            'bg-gray-200 text-gray-500',
+                  s.tipo === 'exclusivo' ? 'bg-gold text-charcoal' : 'bg-verde text-white',
                 ]"
               >
                 {{ s.etiqueta }}
@@ -259,37 +268,45 @@ function submitForm() {
             <p class="text-gray-500 text-sm leading-relaxed flex-1">{{ s.descripcion }}</p>
 
             <!-- CTA según tipo -->
-            <div class="mt-4">
-              <button
-                v-if="s.tipo === 'cotizacion'"
-                @click="abrirCotizacion(s.nombre)"
-                class="w-full border border-charcoal text-charcoal hover:bg-charcoal hover:text-white font-heading font-semibold text-xs uppercase tracking-wider py-2 rounded-lg transition-colors duration-150"
-              >
-                Solicitar cotización
-              </button>
+            <div class="mt-4 flex items-center justify-between gap-2">
               <span
-                v-else-if="s.tipo === 'estandar'"
+                v-if="s.tipo === 'exclusivo'"
                 class="flex items-center gap-1.5 text-gold text-xs font-heading font-semibold"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+                Exclusivo Barroca
+              </span>
+              <span
+                v-else
+                class="flex items-center gap-1.5 text-verde text-xs font-heading font-semibold"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
                 Servicio disponible
               </span>
+              <button
+                @click="abrirCotizacion(s.id, s.nombre)"
+                class="text-xs font-heading font-semibold text-charcoal border border-charcoal/30 hover:border-gold hover:text-gold px-3 py-1 rounded-full transition-colors"
+              >
+                Cotizar
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Nota servicios de cotización -->
+      <!-- Nota servicios exclusivos -->
       <div class="mt-8 bg-charcoal/5 border border-charcoal/10 rounded-xl px-5 py-4 flex items-start gap-3">
         <svg class="w-5 h-5 text-charcoal flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <p class="text-sm text-gray-600">
-          Los servicios marcados como <strong class="text-charcoal">Cotización</strong> son específicos y su precio
-          varía según las dimensiones, materiales y zona de instalación. Contáctanos para recibir una propuesta personalizada.
+          Los servicios marcados como <strong class="text-charcoal">Exclusivo Barroca</strong> están disponibles únicamente
+          para clientes de Melaminas Barroca. Contáctanos para más información.
         </p>
       </div>
     </div>
@@ -323,6 +340,7 @@ function submitForm() {
               :alt="video.titulo"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
+              decoding="async"
             />
             <div v-else class="w-full h-full bg-charcoal/80 flex items-center justify-center">
               <svg class="w-12 h-12 text-gold/40" fill="currentColor" viewBox="0 0 24 24">
@@ -522,6 +540,7 @@ function submitForm() {
             controls
             autoplay
             playsinline
+            preload="none"
           />
           <!-- Video de YouTube -->
           <iframe
@@ -602,9 +621,11 @@ function submitForm() {
               placeholder="Cuéntanos las dimensiones, materiales de interés y zona de instalación…"
               class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm placeholder-gray-400 focus:outline-none focus:border-gold transition-colors resize-none"/>
           </div>
-          <button type="submit"
-            class="w-full bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider">
-            Enviar solicitud
+          <p v-if="formError" class="text-red-500 text-xs text-center">{{ formError }}</p>
+          <button type="submit" :disabled="formLoading"
+            class="w-full bg-gold hover:bg-gold-dark disabled:opacity-60 text-charcoal font-heading font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+            <span v-if="formLoading" class="w-4 h-4 border-2 border-charcoal/40 border-t-charcoal rounded-full animate-spin"/>
+            {{ formLoading ? 'Enviando...' : 'Enviar solicitud' }}
           </button>
         </form>
       </div>

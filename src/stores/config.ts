@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/services/api'
-import type { CarouselSlide, CatalogoMedia } from '@/types/siteSettings'
+import type { CarouselSlide, CatalogoMedia, DistribucionMedia } from '@/types/siteSettings'
 
 export const useConfigStore = defineStore('config', () => {
   // Hero desktop
@@ -13,10 +13,13 @@ export const useConfigStore = defineStore('config', () => {
 
   const carousel = ref<CarouselSlide[]>([])
   const catalogos = ref<Record<string, CatalogoMedia>>({})
+  const distribucion = ref<DistribucionMedia[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const fetched = ref(false)
 
-  async function fetchSettings() {
+  async function fetchSettings(force = false) {
+    if ((fetched.value || loading.value) && !force) return
     loading.value = true
     error.value = null
     try {
@@ -37,6 +40,8 @@ export const useConfigStore = defineStore('config', () => {
 
       carousel.value = data.carousel ?? []
       catalogos.value = data.catalogos ?? {}
+      distribucion.value = (data.distribucion ?? []).filter((d: DistribucionMedia) => d.is_active)
+      fetched.value = true
     } catch (e) {
       error.value = 'No se pudieron cargar las configuraciones del sitio.'
       console.error('Failed to fetch site media:', e)
@@ -52,8 +57,10 @@ export const useConfigStore = defineStore('config', () => {
     heroMobileBlur,
     carousel,
     catalogos,
+    distribucion,
     loading,
     error,
+    fetched,
     fetchSettings,
   }
 })

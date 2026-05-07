@@ -3,6 +3,7 @@ import { onMounted, computed, ref } from 'vue'
 import { useAlmacenesStore } from '@/stores/almacenes'
 import { useAnalytics } from '@/composables/useAnalytics'
 import { useCitasStore } from '@/stores/citas'
+import api from '@/services/api'
 
 const store = useAlmacenesStore()
 const citas = useCitasStore()
@@ -37,10 +38,18 @@ const llamadaLoading = ref(false)
 async function enviarLlamada() {
   if (!llamadaForm.value.nombre || !llamadaForm.value.telefono) return
   llamadaLoading.value = true
-  // TODO: conectar con endpoint del backend POST /api/public/llamadas
-  await new Promise((r) => setTimeout(r, 800))
-  llamadaLoading.value = false
-  llamadaEnviado.value = true
+  try {
+    await api.post('/api/public/solicitud-llamada', {
+      nombre:   llamadaForm.value.nombre,
+      telefono: llamadaForm.value.telefono,
+      mensaje:  llamadaForm.value.correo || undefined,
+    })
+    llamadaEnviado.value = true
+  } catch {
+    // mantiene el form visible para que el usuario reintente
+  } finally {
+    llamadaLoading.value = false
+  }
 }
 
 function resetLlamada() {
@@ -72,16 +81,19 @@ const opcionesMuestrario = [
 async function enviarMuestrario() {
   if (!muestrarioForm.value.nombre || !muestrarioForm.value.telefono || !muestrarioForm.value.muestrario) return
   muestrarioLoading.value = true
-  // TODO: conectar con endpoint del backend POST /api/public/muestrario
-  // Por ahora enviamos por WhatsApp como fallback
-  await new Promise((r) => setTimeout(r, 800))
-  const texto = encodeURIComponent(
-    `Hola Barroca! Me interesa adquirir un muestrario.\n\nNombre: ${muestrarioForm.value.nombre}\nTeléfono: ${muestrarioForm.value.telefono}\nCorreo: ${muestrarioForm.value.correo}\nMuestrario: ${muestrarioForm.value.muestrario}`,
-  )
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${texto}`, '_blank')
-  muestrarioLoading.value = false
-  muestrarioEnviado.value = true
-  trackWhatsAppClick('muestrario')
+  try {
+    await api.post('/api/public/solicitud-muestrario', {
+      nombre:   muestrarioForm.value.nombre,
+      telefono: muestrarioForm.value.telefono,
+      email:    muestrarioForm.value.correo || undefined,
+      mensaje:  muestrarioForm.value.muestrario,
+    })
+    muestrarioEnviado.value = true
+  } catch {
+    // mantiene el form visible para que el usuario reintente
+  } finally {
+    muestrarioLoading.value = false
+  }
 }
 
 function resetMuestrario() {
@@ -126,7 +138,7 @@ onMounted(() => {
       <div v-else-if="store.error" class="text-center py-12">
         <p class="text-red-500 mb-4">{{ store.error }}</p>
         <button
-          @click="store.fetchAlmacenes()"
+          @click="store.fetchAlmacenes(true)"
           class="bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold uppercase tracking-wider px-6 py-3 rounded transition-colors"
         >
           Reintentar

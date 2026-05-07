@@ -2,7 +2,6 @@
 import { ref, computed, nextTick, onMounted } from 'vue'
 import { useProductosStore } from '@/stores/productos'
 import type { ProductoCatalogo, ColorCatalogo } from '@/types/producto'
-import { generarVisualizacion } from '@/services/gemini.service'
 import { imageUrl } from '@/utils/imageUrl'
 import api from '@/services/api'
 
@@ -22,7 +21,7 @@ const activeTab = ref<'chat' | 'showroom'>('chat')
 const productosStore = useProductosStore()
 
 onMounted(() => {
-  if (!productosStore.productos.length) productosStore.fetchProductos()
+  productosStore.fetchProductos()
 })
 
 // ── Chat FAQ ───────────────────────────────────────────────────────────────
@@ -39,62 +38,151 @@ const isBotTyping = ref(false)
 const messagesEnd = ref<HTMLElement | null>(null)
 
 const quickReplies = [
-  '¿Qué materiales tienen?',
-  '¿Cuánto tarda la entrega?',
-  '¿Hacen instalación?',
-  '¿Cómo pido una cotización?',
+  '¿Qué servicios ofrece Barroca?',
   '¿Dónde están ubicados?',
-  '¿Tienen garantía?',
+  '¿Cuáles son sus horarios de atención?',
+  '¿Cómo puedo cotizar?',
+  '¿Tienen catálogo de melaminas?',
+  '¿Hacen corte y enchapado juntos?',
 ]
 
 const faqs = [
+  // ── Servicios generales ────────────────────────────────────────────────────
   {
-    keywords: ['precio', 'costo', 'cuánto', 'cuanto', 'vale', 'cotiz', 'presupuesto', 'cobran'],
-    respuesta: 'Los precios varían según el material, medidas y acabado. Puedes solicitar una cotización personalizada en la sección de **Servicios** o contactarnos por **WhatsApp al +52 417 160 1530**. 📋',
+    keywords: ['servicios', 'que ofrece', 'qué ofrece', 'que hacen', 'qué hacen', 'que tienen', 'qué tienen', 'que venden', 'qué venden'],
+    respuesta: 'En **Barroca** ofrecemos:\n\n• **Melaminas** — más de 200 referencias en colores, vetas y texturas\n• **Pisos SPC y Vinílicos** — alta durabilidad y diseño\n• **Corte a medida** — con despiece incluido\n• **Enchapado de cubrecantos** — acabado perfecto para tus tableros\n• **Afilado de discos** — disponible para todos\n• **Envío a domicilio** — en compras realizadas con nosotros\n\n¿Sobre cuál te gustaría saber más? 😊',
   },
+
+  // ── Ubicación ──────────────────────────────────────────────────────────────
   {
-    keywords: ['entrega', 'envío', 'envio', 'tiempo', 'días', 'dias', 'tarda', 'llega', 'demora'],
-    respuesta: 'Los tiempos de entrega según zona:\n\n• **Zona Metropolitana**: 1-2 días hábiles\n• **Zona Centro**: 2-3 días hábiles\n• **Norte / Sur**: 4-6 días hábiles\n\nA partir de la confirmación de pago. 🚚',
-  },
-  {
-    keywords: ['melamina', 'material', 'producto', 'catalogo', 'catálogo', 'tienen', 'ofrecen', 'venden', 'piso', 'vinilico', 'vinílico', 'spc'],
-    respuesta: 'Contamos con más de **200 referencias** en:\n\n• **Melaminas** — sólidos, vetas de madera, texturas metálicas\n• **Pisos SPC** — alta durabilidad, resistentes al agua\n• **Pisos Vinílicos** — versátiles y económicos\n\n¡Prueba el **Showroom Virtual** para ver cómo quedarían en tu espacio! 🎨',
-  },
-  {
-    keywords: ['instalacion', 'instalación', 'instalan', 'instala', 'colocan', 'ponen', 'instalar'],
-    respuesta: 'Sí ofrecemos **instalación profesional** en zonas seleccionadas. Es un servicio con cotización previa ya que depende del área, material y ubicación. Contáctanos para más detalles. 🔧',
-  },
-  {
-    keywords: ['garantia', 'garantía', 'devolu', 'cambio', 'defecto', 'falla'],
-    respuesta: 'Todos nuestros productos tienen **garantía de calidad**. Si recibes un producto con defecto de fabricación, lo reemplazamos sin costo dentro de los primeros **7 días** de recibida la entrega. ✅',
-  },
-  {
-    keywords: ['ubicacion', 'ubicación', 'sucursal', 'tienda', 'direccion', 'dirección', 'donde', 'dónde'],
+    keywords: ['ubicacion', 'ubicación', 'sucursal', 'tienda', 'direccion', 'dirección', 'donde', 'dónde', 'ubicados'],
     respuesta: 'Contamos con sucursales en la **zona centro de México**. Escríbenos por WhatsApp y te indicamos la más cercana o coordinamos una visita. 📍\n\n**WhatsApp**: +52 417 160 1530',
   },
+
+  // ── Horarios ───────────────────────────────────────────────────────────────
   {
-    keywords: ['distribuidor', 'distribui', 'revendedor', 'mayoreo', 'reventa'],
-    respuesta: 'Si te interesa ser distribuidor Barroca, visita la sección de **Distribuidores** y llena el formulario de solicitud. ¡Con gusto analizamos tu propuesta! 🤝',
+    keywords: ['horario', 'horarios', 'atencion', 'atención', 'abren', 'cierran', 'cuando atienden', 'cuándo atienden', 'dias de trabajo'],
+    respuesta: 'Nuestro horario de atención es:\n\n• **Lunes a Viernes**: 8:00 – 17:00\n• **Sábados**: 8:00 – 13:00\n\nFuera de horario puedes escribirnos por **WhatsApp** y te respondemos a la brevedad. ⏰',
   },
+
+  // ── Cotización ─────────────────────────────────────────────────────────────
   {
-    keywords: ['corte', 'medida', 'personaliz', 'dimensiones', 'medidas'],
-    respuesta: 'Sí hacemos **cortes a medida** con tolerancias exactas. El precio depende de las dimensiones y el material. Solicita tu cotización por WhatsApp o en la sección de **Servicios**. ✂️',
+    keywords: ['cotizar', 'cotizacion', 'cotización', 'presupuesto', 'precio', 'cuanto cuesta', 'cuánto cuesta', 'cuanto vale', 'cobran'],
+    respuesta: 'Para cotizar, contáctanos por **WhatsApp al +52 417 160 1530** con:\n\n1. Material que necesitas (melamina, piso, etc.)\n2. Medidas o m² aproximados\n3. Servicio adicional (corte, enchapado)\n\nTe enviamos tu cotización personalizada a la brevedad. 📋',
   },
+
+  // ── Catálogo de melaminas ──────────────────────────────────────────────────
   {
-    keywords: ['showroom', 'visualizar', 'visualiza', 'ver como', 'probar', 'prueba', 'foto', 'espacio'],
-    respuesta: '¡Usa el **Showroom Virtual** justo aquí al lado! 👈\n\n1. Elige el material que te interesa\n2. Sube una foto de tu espacio\n3. La IA genera cómo quedaría\n\n¡Es muy fácil y gratis!',
+    keywords: ['catalogo', 'catálogo', 'catalogo de melaminas', 'colores melamina', 'referencias', 'modelos'],
+    respuesta: 'Contamos con más de **200 referencias** en melamina:\n\n• **Sólidos** — blanco, negro, gris y más\n• **Vetas de madera** — roble, nogal, wengué, pino…\n• **Texturas metálicas y especiales**\n\nPuedes ver el catálogo en la sección de **Productos** o escribirnos para enviarte el PDF completo. 🎨\n\n**WhatsApp**: +52 417 160 1530',
   },
+
+  // ── Espesores de melamina ──────────────────────────────────────────────────
   {
-    keywords: ['hola', 'hello', 'buenos', 'buenas', 'saludos', 'que tal', 'qué tal', 'buen dia'],
+    keywords: ['espesor', 'espesores', 'grosor', 'milimetros', 'milímetros', 'mm', 'grueso', 'calibre'],
+    respuesta: 'Manejamos melamina en los siguientes espesores:\n\n• **9 mm** — entrepaños y fondos\n• **15 mm** — uso general\n• **18 mm** — el más común en muebles\n• **25 mm** — para estructuras de mayor carga\n\nContacta por **WhatsApp** para confirmar disponibilidad de cada espesor. 📐',
+  },
+
+  // ── Precios para distribuidor ──────────────────────────────────────────────
+  {
+    keywords: ['precio distribuidor', 'precio para distribuidor', 'precios mayoreo', 'precio mayorista', 'mayoreo', 'precio especial'],
+    respuesta: 'Sí contamos con **precios para distribuidor y mayoreo**. Para acceder a ellos:\n\n1. Visita la sección **Distribuidores** y llena tu solicitud\n2. O escríbenos directo por **WhatsApp al +52 417 160 1530**\n\nAnalizamos tu propuesta y te asignamos condiciones especiales. 🤝',
+  },
+
+  // ── Tipo de tablero ────────────────────────────────────────────────────────
+  {
+    keywords: ['aglomerado', 'mdf', 'tipo de tablero', 'madera tablero', 'particula', 'partícula', 'de que es'],
+    respuesta: 'Nuestras melaminas están fabricadas sobre **tablero de aglomerado (partícula)**:\n\n• Mayor estabilidad dimensional\n• Excelente agarre de tornillos\n• Superficie recubierta con papel melamínico\n\nSi necesitas tablero **MDF** para proyectos específicos, consúltanos por **WhatsApp** ya que la disponibilidad puede variar. 🪵',
+  },
+
+  // ── Corte a medida ─────────────────────────────────────────────────────────
+  {
+    keywords: ['corte', 'cortar', 'costo corte', 'precio corte', 'cuanto corte', 'cuánto corte', 'servicio de corte'],
+    respuesta: 'Sí ofrecemos **corte a medida** con tolerancias exactas.\n\nEl costo depende de la cantidad de cortes y el material. Para cotizar envíanos tu **lista de medidas** por **WhatsApp al +52 417 160 1530** y te damos precio inmediato. ✂️',
+  },
+
+  // ── Despiece ───────────────────────────────────────────────────────────────
+  {
+    keywords: ['despiece', 'optimizacion', 'optimización', 'lista de cortes', 'plano', 'distribucion de cortes', 'ayudan con medidas'],
+    respuesta: 'Sí, te ayudamos con el **despiece de tus medidas**. Puedes enviarnos:\n\n• Tu lista de piezas (ancho × alto en mm o cm)\n• El material y espesor que necesitas\n\nNosotros optimizamos los cortes para minimizar desperdicio. Escríbenos por **WhatsApp al +52 417 160 1530**. 📐',
+  },
+
+  // ── Enchapado ─────────────────────────────────────────────────────────────
+  {
+    keywords: ['enchapado', 'cuanto tarda enchapado', 'cuánto tarda enchapado', 'tiempo enchapado', 'tarda el enchapado'],
+    respuesta: 'El servicio de **enchapado de cubrecantos** se realiza el **mismo día** si tu material llega en la mañana, o al siguiente día hábil.\n\nEl tiempo exacto depende de la cantidad de piezas. Confirma por **WhatsApp al +52 417 160 1530**. ⏱️',
+  },
+
+  // ── Tipos de canto ─────────────────────────────────────────────────────────
+  {
+    keywords: ['tipo de canto', 'tipos de canto', 'canto pvc', 'canto madera', 'cubrecantos', 'que cantos', 'qué cantos'],
+    respuesta: 'Manejamos cubrecantos en **PVC** en distintos acabados y colores que combinan con nuestra línea de melaminas:\n\n• Cantos lisos y con textura\n• Colores coordinados con cada referencia\n• Anchos de 22 mm y 44 mm\n\nConsulta disponibilidad por **WhatsApp al +52 417 160 1530**. 🪛',
+  },
+
+  // ── Corte y enchapado juntos ───────────────────────────────────────────────
+  {
+    keywords: ['corte y enchapado', 'enchapado y corte', 'juntos', 'los dos servicios', 'combo', 'ambos servicios'],
+    respuesta: '¡Sí! Puedes solicitar **corte a medida + enchapado de cubrecantos** en un solo pedido.\n\nEs uno de nuestros servicios más solicitados porque recibes tus piezas listas para ensamblar. Envíanos tu despiece por **WhatsApp al +52 417 160 1530** y cotizamos todo junto. ✅',
+  },
+
+  // ── Piso SPC agua ──────────────────────────────────────────────────────────
+  {
+    keywords: ['spc', 'piso spc', 'resistente al agua', 'agua piso', 'humedad piso', 'impermeab', 'baño cocina piso'],
+    respuesta: 'Sí, el **Piso SPC** es **100% resistente al agua** gracias a su núcleo de piedra compuesta (Stone Plastic Composite).\n\n• Ideal para cocinas, baños y áreas húmedas\n• No se hincha ni se deforma\n• Alta durabilidad ante impactos\n\n¡Usa el **Showroom Virtual** para verlo en tu espacio! 💧',
+  },
+
+  // ── Precio piso SPC ────────────────────────────────────────────────────────
+  {
+    keywords: ['precio piso', 'cuanto piso', 'cuánto piso', 'caja spc', 'costo piso', 'precio spc', 'precio caja'],
+    respuesta: 'El precio del **Piso SPC** varía según el modelo, espesor y metraje por caja. Para darte el precio actualizado escríbenos por **WhatsApp al +52 417 160 1530** indicando el modelo que te interesa. 📦',
+  },
+
+  // ── Afilado de discos ──────────────────────────────────────────────────────
+  {
+    keywords: ['afilar', 'afilado', 'disco', 'discos', 'sierra', 'cuchilla', 'cuanto afilar', 'precio afilar'],
+    respuesta: 'Ofrecemos **afilado de discos** a través de nuestro aliado **Afilados del Bajío**. Este servicio está disponible para todos, no solo clientes de Barroca.\n\nAfilan discos para:\n• Sierra circular\n• Caladora\n• Router / fresadora\n\nPara precios y tiempos, contáctanos por **WhatsApp al +52 417 160 1530**. 🔪',
+  },
+
+  // ── Envíos ─────────────────────────────────────────────────────────────────
+  {
+    keywords: ['envio', 'envío', 'domicilio', 'entregan', 'llevan', 'reparto', 'mandan', 'envian', 'envían', 'flete'],
+    respuesta: 'Sí hacemos **envíos a domicilio**, disponible exclusivamente en compras realizadas con nosotros.\n\nTiempos de entrega aproximados:\n• **Local**: 1-2 días hábiles\n• **Zona Centro**: 2-3 días hábiles\n• **Foráneo**: 4-6 días hábiles\n\nConsulta disponibilidad de envío a tu zona por **WhatsApp al +52 417 160 1530**. 🚚',
+  },
+
+  // ── Garantía ───────────────────────────────────────────────────────────────
+  {
+    keywords: ['garantia', 'garantía', 'devolu', 'cambio', 'defecto', 'falla', 'danado', 'dañado'],
+    respuesta: 'Todos nuestros productos tienen **garantía de calidad**. Si recibes un producto con defecto de fabricación, lo reemplazamos sin costo dentro de los primeros **7 días** de recibida la entrega. ✅\n\nEscríbenos por **WhatsApp al +52 417 160 1530** con foto del producto.',
+  },
+
+  // ── Showroom ───────────────────────────────────────────────────────────────
+  {
+    keywords: ['showroom', 'visualizar', 'visualiza', 'ver como', 'probar', 'prueba', 'foto espacio', 'ia', 'inteligencia artificial'],
+    respuesta: '¡Usa el **Showroom Virtual** justo aquí al lado! 👈\n\n1. Elige el material que te interesa\n2. Sube una foto de tu espacio\n3. La IA genera cómo quedaría\n\n¡Es muy fácil y completamente gratis!',
+  },
+
+  // ── Contacto ───────────────────────────────────────────────────────────────
+  {
+    keywords: ['whatsapp', 'telefono', 'teléfono', 'llamar', 'contacto', 'contactar', 'numero', 'número', 'correo', 'email'],
+    respuesta: 'Puedes contactarnos por:\n\n• **WhatsApp**: +52 417 160 1530\n• **Correo**: ventas@barroca.mx\n\nHorario: Lun–Vie 8:00–17:00, Sáb 8:00–13:00 📞',
+  },
+
+  // ── Distribuidores ─────────────────────────────────────────────────────────
+  {
+    keywords: ['distribuidor', 'distribui', 'revendedor', 'reventa', 'ser distribuidor'],
+    respuesta: 'Si te interesa ser distribuidor Barroca, visita la sección de **Distribuidores** y llena el formulario de solicitud. ¡Con gusto analizamos tu propuesta! 🤝\n\nO escríbenos directo por **WhatsApp al +52 417 160 1530**.',
+  },
+
+  // ── Saludos ────────────────────────────────────────────────────────────────
+  {
+    keywords: ['hola', 'hello', 'buenos', 'buenas', 'saludos', 'que tal', 'qué tal', 'buen dia', 'buen día'],
     respuesta: '¡Hola de nuevo! 👋 ¿En qué puedo ayudarte hoy? Pregúntame lo que necesites o usa los botones de abajo para preguntas frecuentes.',
   },
+
+  // ── Despedida ──────────────────────────────────────────────────────────────
   {
     keywords: ['gracias', 'thanks', 'perfecto', 'excelente', 'genial', 'muy bien', 'listo', 'ok'],
     respuesta: '¡Con mucho gusto! 😊 Si tienes más preguntas, aquí estaré. También puedes contactarnos por **WhatsApp al +52 417 160 1530** para atención personalizada.',
-  },
-  {
-    keywords: ['whatsapp', 'telefono', 'teléfono', 'llamar', 'contacto', 'contactar', 'numero', 'número'],
-    respuesta: 'Puedes contactarnos por:\n\n• **WhatsApp**: +52 417 160 1530\n• **Correo**: ventas@barroca.mx\n\nHorario: Lun–Vie 9:00–18:00 📞',
   },
 ]
 
@@ -127,9 +215,10 @@ async function sendMessage(text?: string) {
   let respuesta: string
   try {
     const { data } = await api.post('/api/public/chat', { pregunta: msg })
-    respuesta = data?.respuesta ?? data?.message ?? data?.answer ?? data?.texto ?? getBotResponse(msg)
-  } catch {
-    respuesta = getBotResponse(msg)
+    respuesta = data?.content ?? getBotResponse(msg)
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { data?: { content?: string } } }
+    respuesta = axiosErr?.response?.data?.content ?? getBotResponse(msg)
   }
 
   isBotTyping.value = false
@@ -149,6 +238,7 @@ const showQuickReplies = computed(
 // ── Showroom ───────────────────────────────────────────────────────────────
 const showroomStep = ref<ShowroomStep>('material')
 const uploadedPhoto = ref<string | null>(null)
+const uploadedFile = ref<File | null>(null)
 const isDragging = ref(false)
 const isProcessing = ref(false)
 const processingError = ref<string | null>(null)
@@ -160,11 +250,24 @@ const showroomTipo = ref<string | null>(null)
 const showroomProducto = ref<ProductoCatalogo | null>(null)
 const showroomColorIdx = ref<number>(0)
 
-const tiposDisponibles = computed(() => productosStore.tipos)
+const TIPOS_SHOWROOM = [
+  { key: 'MELAMINA', label: 'Melaminas' },
+  { key: 'PISO',     label: 'Piso' },
+]
+
+const tiposDisponibles = computed(() =>
+  TIPOS_SHOWROOM.filter(t =>
+    productosStore.productos.some((p: ProductoCatalogo) =>
+      p.tipo?.toUpperCase().startsWith(t.key) && p.colores.length > 0
+    )
+  )
+)
 
 const productosDelTipo = computed((): ProductoCatalogo[] => {
   if (!showroomTipo.value) return []
-  return productosStore.productos.filter((p: ProductoCatalogo) => p.tipo === showroomTipo.value)
+  return productosStore.productos.filter((p: ProductoCatalogo) =>
+    p.tipo?.toUpperCase().startsWith(showroomTipo.value!.toUpperCase()) && p.colores.length > 0
+  )
 })
 
 const showroomColor = computed((): ColorCatalogo | null => {
@@ -199,38 +302,35 @@ function handleFileInput(e: Event) {
 
 function loadFile(file: File) {
   if (!file.type.startsWith('image/')) return
+  uploadedFile.value = file
   const reader = new FileReader()
   reader.onload = ev => { uploadedPhoto.value = ev.target?.result as string }
   reader.readAsDataURL(file)
 }
 
-// ── Visualización con Gemini ───────────────────────────────────────────────
+// ── Visualización ─────────────────────────────────────────────────────────
 async function runVisualization() {
-  if (!uploadedPhoto.value || !showroomProducto.value || !showroomColor.value) return
+  if (!uploadedFile.value || !showroomProducto.value || !showroomColor.value) return
   isProcessing.value = true
   processingError.value = null
   resultImage.value = null
 
   try {
-    const parts = uploadedPhoto.value.split(',')
-    const mimeType = parts[0]?.match(/:(.*?);/)?.[1] ?? 'image/jpeg'
-    const base64 = parts[1] ?? ''
+    const formData = new FormData()
+    formData.append('imagen', uploadedFile.value)
+    formData.append('producto_id', String(showroomProducto.value.id))
+    formData.append('color_nombre', showroomColor.value.nombre)
 
-    const textureRaw = showroomColor.value.imagenes[0] ?? null
-    const textureImageUrl = textureRaw ? imageUrl(textureRaw.url) : null
-
-    resultImage.value = await generarVisualizacion({
-      imageBase64: base64,
-      mimeType,
-      tipo: showroomProducto.value.tipo,
-      subcategoria: showroomProducto.value.subcategoria,
-      colorNombre: showroomColor.value.nombre,
-      textureImageUrl,
+    const { data } = await api.post('/api/public/visualizador', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
     })
+
+    resultImage.value = data.image_url
     showroomStep.value = 'result'
-  } catch (err) {
-    processingError.value = 'No se pudo generar la visualización. Verifica la API key o intenta de nuevo.'
-    console.error('[Gemini Showroom]', err)
+  } catch (err: any) {
+    const msg = err?.response?.data?.message
+    processingError.value = msg ?? 'Error al generar la imagen. Inténtalo de nuevo.'
   } finally {
     isProcessing.value = false
   }
@@ -242,6 +342,7 @@ function resetShowroom() {
   showroomProducto.value = null
   showroomColorIdx.value = 0
   uploadedPhoto.value = null
+  uploadedFile.value = null
   isProcessing.value = false
   processingError.value = null
   resultImage.value = null
@@ -310,7 +411,7 @@ function resetShowroom() {
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-heading font-bold text-charcoal text-sm">Showroom Virtual</p>
-                <p class="text-xs text-gray-400">Visualización con IA · Gemini</p>
+                <p class="text-xs text-gray-400">Visualización con IA</p>
               </div>
               <!-- Step indicator -->
               <div class="flex items-center gap-1">
@@ -338,7 +439,7 @@ function resetShowroom() {
                 </p>
 
                 <!-- Loading del catálogo -->
-                <div v-if="productosStore.loading" class="flex items-center gap-2 text-gray-400 text-xs">
+                <div v-if="productosStore.loading && !tiposDisponibles.length" class="flex items-center gap-2 text-gray-400 text-xs">
                   <div class="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
                   Cargando catálogo...
                 </div>
@@ -350,14 +451,14 @@ function resetShowroom() {
                     <div class="flex gap-2 flex-wrap">
                       <button
                         v-for="tipo in tiposDisponibles"
-                        :key="tipo"
-                        @click="selectTipo(tipo)"
+                        :key="tipo.key"
+                        @click="selectTipo(tipo.key)"
                         class="px-4 py-1.5 rounded-full text-xs font-heading font-semibold border transition-colors"
-                        :class="showroomTipo === tipo
+                        :class="showroomTipo === tipo.key
                           ? 'bg-gold text-charcoal border-gold'
                           : 'border-gray-200 text-gray-500 hover:border-gold hover:text-charcoal'"
                       >
-                        {{ tipo }}
+                        {{ tipo.label }}
                       </button>
                     </div>
                   </div>
@@ -522,7 +623,7 @@ function resetShowroom() {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
-                  {{ isProcessing ? 'Generando con Gemini...' : 'Visualizar en mi espacio' }}
+                  {{ isProcessing ? 'Generando...' : 'Visualizar en mi espacio' }}
                 </button>
               </div>
             </Transition>
@@ -535,7 +636,7 @@ function resetShowroom() {
                   3. Tu espacio con {{ showroomColor?.nombre }}
                 </p>
 
-                <!-- Resultado generado por Gemini -->
+                <!-- Resultado generado -->
                 <div class="relative rounded-xl overflow-hidden aspect-video bg-gray-100 flex-shrink-0">
                   <img
                     v-if="resultImage"

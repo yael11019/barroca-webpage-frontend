@@ -7,13 +7,16 @@ export const useAlmacenesStore = defineStore('almacenes', () => {
   const almacenes = ref<Almacen[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const fetched = ref(false)
   const selected = ref<Almacen | null>(null)
 
-  async function fetchAlmacenes() {
+  async function fetchAlmacenes(force = false) {
+    if (fetched.value && !force) return
     loading.value = true
     error.value = null
     try {
       almacenes.value = await almacenService.getAll()
+      fetched.value = true
       const activos = almacenes.value.filter((a) => a.activo)
       if (activos.length > 0 && !selected.value) {
         selected.value = activos[0] ?? null
@@ -34,6 +37,7 @@ export const useAlmacenesStore = defineStore('almacenes', () => {
     almacenes,
     loading,
     error,
+    fetched,
     selected,
     fetchAlmacenes,
     selectAlmacen,

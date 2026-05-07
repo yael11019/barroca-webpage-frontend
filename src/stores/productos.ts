@@ -7,6 +7,7 @@ export const useProductosStore = defineStore('productos', () => {
   const productos = ref<ProductoCatalogo[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const fetched = ref(false)
 
   // Tipos únicos (MELAMINA, PISO, …) en el orden que llegan del API
   // Filtra productos con tipo null/undefined que vienen del backend
@@ -26,11 +27,13 @@ export const useProductosStore = defineStore('productos', () => {
   // Alias para compatibilidad con código anterior
   const categorias = computed(() => tipos.value)
 
-  async function fetchProductos() {
+  async function fetchProductos(force = false) {
+    if ((fetched.value || loading.value) && !force) return
     loading.value = true
     error.value = null
     try {
       productos.value = await productoService.getAll()
+      fetched.value = true
     } catch (e) {
       error.value = 'Error al cargar los productos. Intente de nuevo más tarde.'
       console.error('Failed to fetch productos:', e)
@@ -43,6 +46,7 @@ export const useProductosStore = defineStore('productos', () => {
     productos,
     loading,
     error,
+    fetched,
     tipos,
     categorias,
     fetchProductos,

@@ -35,7 +35,7 @@ const fichasLoading = ref(false)
 const fichasCache = reactive<Record<string, FichaTecnica[]>>({})
 
 async function openFichas(producto: ProductoCatalogo) {
-  const cat = producto.tipo.toLowerCase().replace(/\s+/g, '_')
+  const cat = (producto.tipo ?? 'general').toLowerCase().replace(/\s+/g, '_')
   fichasCategoria.value = producto.tipo
   fichasOpen.value = true
 
@@ -58,70 +58,47 @@ async function openFichas(producto: ProductoCatalogo) {
 }
 
 const store = useProductosStore()
-const { catalogFilter } = useNavigation()
+const { catalogFilter, navigateTo } = useNavigation()
 const { trackCategoryFilter, trackWhatsAppClick } = useAnalytics()
 
-// ── Tabs (Todos + uno por tipo) ───────────────────────────────────────────────
+// ── Tabs fijos ────────────────────────────────────────────────────────────────
+const TABS = [
+  { key: 'todos',     label: 'Todos' },
+  { key: 'MELAMINA',  label: 'Melaminas' },
+  { key: 'PISO',      label: 'Piso' },
+]
 const activeTab = ref('todos')
-
-const tabs = computed(() => {
-  const tipoTabs = store.tipos.map((tipo: string) => ({
-    key: tipo.toLowerCase(),
-    label: tipo.charAt(0) + tipo.slice(1).toLowerCase(),
-  }))
-  return [{ key: 'todos', label: 'Todos' }, ...tipoTabs]
-})
 
 watch(
   catalogFilter,
   (filter) => {
     if (!filter) return
     const [categoria] = filter.split(':')
-    if (categoria) activeTab.value = categoria.toLowerCase()
+    const key = categoria?.toUpperCase()
+    if (key && TABS.some(t => t.key === key)) activeTab.value = key
   },
   { immediate: true },
 )
 
 // ── Productos filtrados por tab ───────────────────────────────────────────────
 const productosActivos = computed(() => {
-  // Solo mostrar productos con tipo válido y colores
-  const validos = store.productos.filter((p: ProductoCatalogo) => p.tipo && p.colores?.length)
+  const validos = store.productos.filter((p: ProductoCatalogo) => p.tipo && p.colores.length > 0)
   if (activeTab.value === 'todos') return validos
-  const tipo = activeTab.value.toUpperCase()
-  return validos.filter((p: ProductoCatalogo) => p.tipo === tipo)
+  return validos.filter((p: ProductoCatalogo) => p.tipo?.toUpperCase().startsWith(activeTab.value))
 })
 
-// Agrupados por subcategoria (línea) manteniendo el orden de aparición
-const productosPorLinea = computed(() => {
-  const map = new Map<string, ProductoCatalogo[]>()
+// Lista plana de colores para mostrar en el grid
+const coloresActivos = computed(() => {
+  const result: Array<{ producto: ProductoCatalogo; color: ColorCatalogo; idx: number }> = []
   for (const p of productosActivos.value) {
-    const linea = p.subcategoria || 'Otros'
-    if (!map.has(linea)) map.set(linea, [])
-    map.get(linea)!.push(p)
+    p.colores.forEach((color: ColorCatalogo, idx: number) => result.push({ producto: p, color, idx }))
   }
-  return Array.from(map.entries()).map(([linea, productos]) => ({ linea, productos }))
+  return result
 })
 
 function selectTab(tab: string) {
   activeTab.value = tab
   trackCategoryFilter(tab)
-}
-
-// ── Selección de color por tarjeta ───────────────────────────────────────────
-// Mapa: productoId → índice de color activo
-const selectedColorIdx = reactive<Record<number, number>>({})
-
-function getColorIdx(productoId: number): number {
-  return selectedColorIdx[productoId] ?? 0
-}
-
-function setColorIdx(productoId: number, idx: number) {
-  selectedColorIdx[productoId] = idx
-}
-
-function getSelectedColor(producto: ProductoCatalogo): ColorCatalogo {
-  const idx = getColorIdx(producto.id)
-  return producto.colores[idx] ?? producto.colores[0]!
 }
 
 // ── Modal de detalle ──────────────────────────────────────────────────────────
@@ -134,9 +111,9 @@ const modalColor = computed((): ColorCatalogo | null => {
   return selectedProducto.value.colores[modalColorIdx.value] ?? selectedProducto.value.colores[0] ?? null
 })
 
-function openModal(producto: ProductoCatalogo) {
+function openModal(producto: ProductoCatalogo, colorIdx = 0) {
   selectedProducto.value = producto
-  modalColorIdx.value = getColorIdx(producto.id)
+  modalColorIdx.value = colorIdx
   modalImageIdx.value = 0
 }
 
@@ -147,8 +124,6 @@ function closeModal() {
 function setModalColor(idx: number) {
   modalColorIdx.value = idx
   modalImageIdx.value = 0
-  // Sincronizar selección de color con la tarjeta
-  if (selectedProducto.value) setColorIdx(selectedProducto.value.id, idx)
 }
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
@@ -192,7 +167,7 @@ onMounted(() => {
       <!-- Tabs -->
       <div class="flex flex-wrap justify-center gap-3 mb-10">
         <button
-          v-for="tab in tabs"
+          v-for="tab in TABS"
           :key="tab.key"
           @click="selectTab(tab.key)"
           :class="[
@@ -216,112 +191,46 @@ onMounted(() => {
       <div v-else-if="store.error" class="text-center py-16">
         <p class="text-red-500 mb-4">{{ store.error }}</p>
         <button
-          @click="store.fetchProductos()"
+          @click="store.fetchProductos(true)"
           class="bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold uppercase tracking-wider px-6 py-3 rounded transition-colors"
         >
           Reintentar
         </button>
       </div>
 
-      <!-- Grid de productos agrupados por línea -->
+      <!-- Grid plano de colores -->
       <template v-else>
-        <div v-if="productosActivos.length > 0" class="space-y-14">
-          <div v-for="{ linea, productos } in productosPorLinea" :key="linea">
-
-            <!-- Cabecera de línea -->
-            <div class="flex items-center gap-3 mb-6">
-              <div class="w-1 h-6 bg-gold rounded-full flex-shrink-0"></div>
-              <h3 class="font-heading font-bold text-charcoal text-base uppercase tracking-widest">{{ linea }}</h3>
-              <div class="flex-1 h-px bg-gray-200"></div>
-              <span class="text-xs text-gray-400 font-heading">{{ productos.reduce((s, p) => s + p.colores.length, 0) }} colores</span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div
-            v-for="producto in productos"
-            :key="producto.id"
-            class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+        <div v-if="coloresActivos.length > 0"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+        >
+          <button
+            v-for="{ producto, color, idx } in coloresActivos"
+            :key="`${producto.id}-${color.nombre}`"
+            @click="openModal(producto, idx)"
+            class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 text-left"
           >
-            <!-- Imagen (cambia con el color seleccionado) -->
-            <div
-              class="relative aspect-square overflow-hidden bg-gray-100 cursor-pointer group"
-              @click="openModal(producto)"
-            >
+            <div class="aspect-square bg-gray-100 overflow-hidden">
               <img
-                v-if="getSelectedColor(producto).imagenes.length"
-                :src="imageUrl(getSelectedColor(producto).imagenes[0]?.url ?? '')"
-                :alt="`${producto.nombre} — ${getSelectedColor(producto).nombre}`"
+                v-if="color.imagenes.length"
+                :src="imageUrl(color.imagenes[0]?.url ?? '')"
+                :alt="`${producto.nombre} — ${color.nombre}`"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
+                decoding="async"
               />
               <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-
-              <!-- Badge: número de colores -->
-              <span class="absolute top-2 right-2 bg-black/60 text-white text-xs font-heading px-2 py-1 rounded-full">
-                {{ producto.colores.length }} colores
-              </span>
-
-              <!-- Color activo en la imagen -->
-              <div class="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/50 to-transparent">
-                <p class="text-white text-xs font-heading font-semibold truncate">
-                  {{ getSelectedColor(producto).nombre }}
-                </p>
-              </div>
             </div>
-
-            <!-- Info + selector de colores -->
-            <div class="p-4">
-              <p class="text-xs text-gray-400 font-heading uppercase tracking-wider mb-0.5">
-                {{ producto.tipo }}
-              </p>
-              <h4 class="font-heading font-bold text-charcoal mb-3">{{ producto.nombre }}</h4>
-
-              <!-- Chips de color (máx 10 visibles) -->
-              <div class="flex flex-wrap gap-1.5 mb-4">
-                <button
-                  v-for="(color, idx) in producto.colores.slice(0, 10)"
-                  :key="color.nombre"
-                  :title="color.nombre"
-                  @click="setColorIdx(producto.id, idx)"
-                  class="text-[10px] font-heading px-2 py-0.5 rounded-full border transition-colors whitespace-nowrap"
-                  :class="getColorIdx(producto.id) === idx
-                    ? 'bg-gold text-charcoal border-gold'
-                    : 'border-gray-200 text-gray-500 hover:border-gold/60 hover:text-charcoal'"
-                >
-                  {{ color.nombre }}
-                </button>
-                <span
-                  v-if="producto.colores.length > 10"
-                  class="text-[10px] text-gray-400 font-heading self-center"
-                >
-                  +{{ producto.colores.length - 10 }}
-                </span>
-              </div>
-
-              <div class="flex gap-2 mt-1">
-                <button
-                  @click="openModal(producto)"
-                  class="flex-1 border border-charcoal text-charcoal hover:bg-charcoal hover:text-white font-heading font-semibold text-xs uppercase tracking-wider py-2 rounded-lg transition-colors duration-150"
-                >
-                  Catálogo
-                </button>
-                <button
-                  @click="openFichas(producto)"
-                  class="flex-1 bg-gold hover:bg-gold-dark text-charcoal font-heading font-semibold text-xs uppercase tracking-wider py-2 rounded-lg transition-colors duration-150"
-                >
-                  Fichas Técnicas
-                </button>
-              </div>
+            <div class="px-2 py-2">
+              <p class="text-xs font-heading font-semibold text-charcoal leading-tight truncate">{{ color.nombre }}</p>
+              <p class="text-[10px] text-gray-400 font-heading truncate mt-0.5">{{ producto.nombre }}</p>
             </div>
-          </div>
-            </div><!-- /grid -->
-          </div><!-- /v-for linea -->
-        </div><!-- /space-y-14 -->
+          </button>
+        </div>
 
         <!-- Estado vacío -->
         <div v-else class="text-center py-16">
@@ -348,12 +257,12 @@ onMounted(() => {
     <!-- ── Modal Fichas Técnicas ──────────────────────────────────────────────── -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="fichasOpen" class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm" @click="fichasOpen = false" />
+        <div v-if="fichasOpen" class="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm" @click="fichasOpen = false" />
       </Transition>
       <Transition name="modal-up">
         <div
           v-if="fichasOpen"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 z-[60] flex items-center justify-center p-4"
           @click.self="fichasOpen = false"
         >
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
@@ -431,7 +340,7 @@ onMounted(() => {
           <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
             <div>
               <span class="text-xs font-heading uppercase tracking-widest text-gold font-semibold">
-                {{ selectedProducto.tipo }} — {{ selectedProducto.subcategoria }}
+                {{ selectedProducto.tipo }}{{ selectedProducto.subcategoria ? ` — ${selectedProducto.subcategoria}` : '' }}
               </span>
               <h3 class="font-heading font-bold text-charcoal text-xl">{{ selectedProducto.nombre }}</h3>
             </div>
@@ -455,6 +364,8 @@ onMounted(() => {
                 :src="imageUrl(modalColor.imagenes[modalImageIdx]?.url ?? '')"
                 :alt="`${selectedProducto.nombre} — ${modalColor.nombre}`"
                 class="w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
               />
               <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
                 <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -472,6 +383,19 @@ onMounted(() => {
               {{ getLeyenda(modalColor?.imagenes[modalImageIdx]) }}
             </p>
 
+            <!-- Botón Barroca Bot para imágenes IA -->
+            <button
+              v-if="modalColor?.imagenes[modalImageIdx]?.legend === 'ai_render'"
+              @click="navigateTo('barroca-bot'); closeModal()"
+              class="w-full flex items-center justify-center gap-2 bg-verde hover:bg-verde-light text-white font-heading font-semibold text-sm px-5 py-3 rounded-xl transition-colors duration-200"
+            >
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              Ve cómo se vería tu espacio con nuestro Barroca Bot
+            </button>
+
             <!-- Miniaturas del color activo -->
             <div v-if="modalColor && modalColor.imagenes.length > 1" class="flex gap-2 overflow-x-auto pb-1">
               <button
@@ -481,7 +405,7 @@ onMounted(() => {
                 class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors"
                 :class="modalImageIdx === idx ? 'border-gold' : 'border-transparent hover:border-gray-300'"
               >
-                <img :src="imageUrl(img.url)" :alt="`${modalColor.nombre} ${idx + 1}`" class="w-full h-full object-cover" />
+                <img :src="imageUrl(img.url)" :alt="`${modalColor.nombre} ${idx + 1}`" class="w-full h-full object-cover" loading="lazy" decoding="async" />
               </button>
             </div>
 
@@ -511,16 +435,29 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Botón WhatsApp -->
-            <button
-              @click="whatsappProducto(selectedProducto)"
-              class="w-full inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-heading font-bold uppercase tracking-wider px-6 py-3 rounded-full transition-colors"
-            >
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-              </svg>
-              Consultar por WhatsApp
-            </button>
+            <!-- Botones de acción -->
+            <div class="flex gap-3">
+              <button
+                @click="whatsappProducto(selectedProducto)"
+                class="flex-1 inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-heading font-bold uppercase tracking-wider px-4 py-3 rounded-full transition-colors"
+              >
+                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                WhatsApp
+              </button>
+
+              <button
+                @click="openFichas(selectedProducto)"
+                class="flex-1 inline-flex items-center justify-center gap-2 border-2 border-charcoal text-charcoal hover:bg-charcoal hover:text-white font-heading font-bold uppercase tracking-wider px-4 py-3 rounded-full transition-colors"
+              >
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Fichas Técnicas
+              </button>
+            </div>
 
           </div>
         </div>

@@ -3,8 +3,14 @@ import type { ProductoCatalogo, Producto, Variante } from '@/types/producto'
 
 export const productoService = {
   async getAll(): Promise<ProductoCatalogo[]> {
-    const { data } = await api.get<ProductoCatalogo[]>('/api/public/productos')
-    return data
+    const { data } = await api.get<any[]>('/api/public/productos')
+    return (data ?? []).map((item: any) => ({
+      id: item.id,
+      nombre: item.nombre,
+      tipo: item.tipo ?? item.categoria ?? null,
+      subcategoria: item.subcategoria ?? null,
+      colores: item.colores ?? [],
+    }))
   },
 
   async getById(id: number): Promise<Producto> {

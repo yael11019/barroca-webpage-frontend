@@ -25,6 +25,14 @@ export interface CatalogoMedia {
   mobile_blur?: string
 }
 
+export interface DistribucionMedia {
+  id: number
+  image_url: string
+  blur_placeholder?: string
+  order: number
+  is_active: boolean
+}
+
 export interface SiteMediaResponse {
   // Legacy
   hero_url?: string
@@ -33,4 +41,5 @@ export interface SiteMediaResponse {
   hero?: HeroMedia
   carousel: CarouselSlide[]
   catalogos?: Record<string, CatalogoMedia>
+  distribucion?: DistribucionMedia[]
 }

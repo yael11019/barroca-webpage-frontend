@@ -21,10 +21,12 @@ const isBotTyping = ref(false)
 const messagesEnd = ref<HTMLElement | null>(null)
 
 const quickReplies = [
-  '¿Qué materiales tienen?',
-  '¿Hacen instalación?',
-  '¿Cuánto tarda la entrega?',
-  '¿Cómo pido cotización?',
+  '¿Qué servicios ofrece Barroca?',
+  '¿Dónde están ubicados?',
+  '¿Cuáles son sus horarios de atención?',
+  '¿Cómo puedo cotizar?',
+  '¿Tienen catálogo de melaminas?',
+  '¿Hacen corte y enchapado juntos?',
 ]
 
 function renderText(text: string): string {
@@ -47,12 +49,14 @@ async function sendMessage(text?: string) {
   isBotTyping.value = true
   await scrollToBottom()
 
+  const fallback = 'Lo siento, no pude procesar tu pregunta. Contáctanos por **WhatsApp al +52 417 160 1530**. 😊'
   let respuesta: string
   try {
     const { data } = await api.post('/api/public/chat', { pregunta: msg })
-    respuesta = data?.respuesta ?? data?.message ?? data?.answer ?? data?.texto ?? 'Recibido.'
-  } catch {
-    respuesta = 'No pude conectarme en este momento. Contáctanos por **WhatsApp al +52 417 160 1530**. 😊'
+    respuesta = data?.content ?? fallback
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { data?: { content?: string } } }
+    respuesta = axiosErr?.response?.data?.content ?? fallback
   }
 
   isBotTyping.value = false

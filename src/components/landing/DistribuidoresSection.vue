@@ -1,23 +1,45 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import Mexico from '@svg-maps/mexico'
+import { useConfigStore } from '@/stores/config'
+import api from '@/services/api'
+
+const configStore = useConfigStore()
 
 // ── Modal ──────────────────────────────────────────────────────────────────
 const modalOpen = ref(false)
 const formEnviado = ref(false)
+const formLoading = ref(false)
+const formError = ref<string | null>(null)
 
 const form = reactive({
   nombre: '', empresa: '', negocio: '', correo: '', telefono: '', direccion: '',
 })
 
-function submitForm() {
-  formEnviado.value = true
-  setTimeout(() => {
-    modalOpen.value = false
-    formEnviado.value = false
-    modalEsPrimerDistrib.value = false
-    Object.assign(form, { nombre: '', empresa: '', negocio: '', correo: '', telefono: '', direccion: '' })
-  }, 2500)
+async function submitForm() {
+  formLoading.value = true
+  formError.value = null
+  try {
+    await api.post('/api/public/solicitud-distribuidor', {
+      nombre_contacto:  form.nombre,
+      empresa:          form.empresa || undefined,
+      telefono:         form.telefono,
+      email:            form.correo || undefined,
+      ciudad:           form.direccion || undefined,
+      tipo_negocio:     form.negocio || undefined,
+    })
+    formEnviado.value = true
+    setTimeout(() => {
+      modalOpen.value = false
+      formEnviado.value = false
+      modalEsPrimerDistrib.value = false
+      Object.assign(form, { nombre: '', empresa: '', negocio: '', correo: '', telefono: '', direccion: '' })
+    }, 2500)
+  } catch {
+    formError.value = 'No se pudo enviar la solicitud. Intenta de nuevo.'
+  } finally {
+    formLoading.value = false
+  }
 }
 
 function cerrarModal() { modalOpen.value = false; formEnviado.value = false; modalEsPrimerDistrib.value = false }
@@ -138,17 +160,21 @@ const chipsCobertura = estadosConCobertura.map(id => ({
     <!-- ── Hero ───────────────────────────────────────────────────────── -->
     <div class="relative bg-charcoal overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/90 to-charcoal/60 z-10" />
-      <div class="absolute inset-0 opacity-10">
+      <!-- Imagen del backend (distribucion[0]) -->
+      <img
+        v-if="configStore.distribucion[0]"
+        :src="configStore.distribucion[0].image_url"
+        class="absolute inset-0 w-full h-full object-cover"
+        alt="Red de distribución Barroca"
+      />
+      <!-- Placeholder mientras no hay imagen -->
+      <div v-else class="absolute inset-0 opacity-10">
         <svg class="w-full h-full" viewBox="0 0 800 360" fill="none" preserveAspectRatio="xMidYMid slice">
           <rect width="800" height="360" fill="#3D3D3D"/>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#555" stroke-width="1"/>
           </pattern>
           <rect width="800" height="360" fill="url(#grid)"/>
-          <circle cx="400" cy="140" r="48" stroke="#FFD225" stroke-width="3" fill="none"/>
-          <path d="M 374 140 L 400 114 L 426 140 L 426 178 L 374 178 Z" stroke="#FFD225" stroke-width="3" fill="none"/>
-          <rect x="388" y="152" width="24" height="26" stroke="#FFD225" stroke-width="2" fill="none"/>
-          <text x="400" y="232" text-anchor="middle" fill="#FFD225" font-family="Montserrat,sans-serif" font-size="12" font-weight="600" letter-spacing="3">IMAGEN PRÓXIMAMENTE</text>
         </svg>
       </div>
       <div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
@@ -519,9 +545,11 @@ const chipsCobertura = estadosConCobertura.map(id => ({
             <input v-model="form.direccion" type="text" required placeholder="Ciudad, Estado"
               class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-charcoal placeholder-gray-400 focus:outline-none focus:border-gold transition-colors"/>
           </div>
-          <button type="submit"
-            class="w-full bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider mt-2">
-            Enviar solicitud
+          <p v-if="formError" class="text-red-500 text-xs text-center">{{ formError }}</p>
+          <button type="submit" :disabled="formLoading"
+            class="w-full bg-gold hover:bg-gold-dark disabled:opacity-60 text-charcoal font-heading font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider mt-2 flex items-center justify-center gap-2">
+            <span v-if="formLoading" class="w-4 h-4 border-2 border-charcoal/40 border-t-charcoal rounded-full animate-spin"/>
+            {{ formLoading ? 'Enviando...' : 'Enviar solicitud' }}
           </button>
         </form>
       </div>
