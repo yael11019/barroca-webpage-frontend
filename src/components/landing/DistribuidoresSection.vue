@@ -3,6 +3,7 @@ import { ref, computed, reactive } from 'vue'
 import Mexico from '@svg-maps/mexico'
 import { useConfigStore } from '@/stores/config'
 import api from '@/services/api'
+import LazyImage from '@/components/LazyImage.vue'
 
 const configStore = useConfigStore()
 
@@ -161,11 +162,12 @@ const chipsCobertura = estadosConCobertura.map(id => ({
     <div class="relative bg-charcoal overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/90 to-charcoal/60 z-10" />
       <!-- Imagen del backend (distribucion[0]) -->
-      <img
+      <LazyImage
         v-if="configStore.distribucion[0]"
         :src="configStore.distribucion[0].image_url"
-        class="absolute inset-0 w-full h-full object-cover"
+        :blur="configStore.distribucion[0].blur_placeholder"
         alt="Red de distribución Barroca"
+        class="absolute inset-0 w-full h-full"
       />
       <!-- Placeholder mientras no hay imagen -->
       <div v-else class="absolute inset-0 opacity-10">

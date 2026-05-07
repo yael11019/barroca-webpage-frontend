@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNavigation } from '@/composables/useNavigation'
 import { useConfigStore } from '@/stores/config'
+import LazyImage from '@/components/LazyImage.vue'
 
 const { navigateTo } = useNavigation()
 const configStore = useConfigStore()
@@ -136,10 +137,18 @@ function irACatalogo(filtro?: string) {
     <section class="relative min-h-[50vh] flex items-center justify-center bg-gold overflow-hidden">
 
       <!-- Imagen real del backend detrás del contenido (desktop/mobile) -->
-      <picture v-if="configStore.heroUrl" class="absolute inset-0 w-full h-full">
-        <source media="(max-width: 768px)" :srcset="configStore.heroMobileUrl || configStore.heroUrl" />
-        <img :src="configStore.heroUrl" alt="Imagen principal Barroca" class="w-full h-full object-cover" fetchpriority="high" decoding="auto" />
-      </picture>
+      <LazyImage
+        v-if="configStore.heroUrl"
+        :src="configStore.heroUrl"
+        :blur="configStore.heroBlur"
+        :mobile-src="configStore.heroMobileUrl || configStore.heroUrl"
+        :mobile-blur="configStore.heroMobileBlur || configStore.heroBlur"
+        alt="Imagen principal Barroca"
+        loading="eager"
+        fetchpriority="high"
+        decoding="auto"
+        class="absolute inset-0 w-full h-full"
+      />
 
       <!-- Sin imagen: gradiente dorado de marca -->
       <!-- Con imagen: overlay oscuro sutil solo para contraste del texto -->
@@ -201,31 +210,17 @@ function irACatalogo(filtro?: string) {
           :class="i === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'"
         >
           <!-- Imagen del backend: solo se renderiza cuando el slide ha sido alcanzado -->
-          <template v-if="slideHasImage(slide) && isSlideLoaded(i)">
-            <!-- Blur placeholder mientras carga la imagen completa (desktop) -->
-            <div
-              v-if="slide.blur_placeholder"
-              class="absolute inset-0 bg-cover bg-center hidden md:block"
-              :style="{ backgroundImage: `url(${slide.blur_placeholder})` }"
-            />
-            <!-- Blur placeholder mobile -->
-            <div
-              v-if="slide.blur_placeholder_mobile || slide.blur_placeholder"
-              class="absolute inset-0 bg-cover bg-center md:hidden"
-              :style="{ backgroundImage: `url(${slide.blur_placeholder_mobile || slide.blur_placeholder})` }"
-            />
-            <picture class="absolute inset-0 w-full h-full">
-              <source media="(max-width: 768px)" :srcset="slideMobileUrl(slide)" />
-              <img
-                :src="slideDesktopUrl(slide)"
-                :alt="`Slide ${i + 1}`"
-                class="w-full h-full object-cover"
-                :fetchpriority="i === 0 ? 'high' : 'low'"
-                :loading="i === 0 ? 'eager' : 'lazy'"
-                decoding="async"
-              />
-            </picture>
-          </template>
+          <LazyImage
+            v-if="slideHasImage(slide) && isSlideLoaded(i)"
+            :src="slideDesktopUrl(slide)"
+            :blur="slide.blur_placeholder"
+            :mobile-src="slideMobileUrl(slide)"
+            :mobile-blur="slide.blur_placeholder_mobile || slide.blur_placeholder"
+            :alt="`Slide ${i + 1}`"
+            :loading="i === 0 ? 'eager' : 'lazy'"
+            :fetchpriority="i === 0 ? 'high' : 'low'"
+            class="absolute inset-0 w-full h-full"
+          />
 
           <!-- Placeholder local (sin imagen de backend) -->
           <div
@@ -296,27 +291,14 @@ function irACatalogo(filtro?: string) {
           @click="irACatalogo('melamina')"
           class="block w-full relative rounded-xl overflow-hidden mb-8 h-40 md:h-56 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
         >
-          <div
-            v-if="configStore.catalogos['melamina'].desktop_blur"
-            class="absolute inset-0 bg-cover bg-center hidden md:block"
-            :style="{ backgroundImage: `url(${configStore.catalogos['melamina'].desktop_blur})` }"
+          <LazyImage
+            :src="configStore.catalogos['melamina'].desktop_url"
+            :blur="configStore.catalogos['melamina'].desktop_blur"
+            :mobile-src="configStore.catalogos['melamina'].mobile_url || configStore.catalogos['melamina'].desktop_url"
+            :mobile-blur="configStore.catalogos['melamina'].mobile_blur || configStore.catalogos['melamina'].desktop_blur"
+            alt="Catálogo de Melaminas"
+            class="absolute inset-0 w-full h-full"
           />
-          <div
-            v-if="configStore.catalogos['melamina'].mobile_blur || configStore.catalogos['melamina'].desktop_blur"
-            class="absolute inset-0 bg-cover bg-center md:hidden"
-            :style="{ backgroundImage: `url(${configStore.catalogos['melamina'].mobile_blur || configStore.catalogos['melamina'].desktop_blur})` }"
-          />
-          <picture class="absolute inset-0 w-full h-full">
-            <source
-              media="(max-width: 768px)"
-              :srcset="configStore.catalogos['melamina'].mobile_url || configStore.catalogos['melamina'].desktop_url"
-            />
-            <img
-              :src="configStore.catalogos['melamina'].desktop_url"
-              alt="Catálogo de Melaminas"
-              class="w-full h-full object-cover"
-            />
-          </picture>
           <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-end px-6 pb-5">
             <p class="text-white font-heading text-lg md:text-2xl font-bold drop-shadow">Descubre todas nuestras líneas</p>
           </div>
@@ -350,27 +332,14 @@ function irACatalogo(filtro?: string) {
           @click="irACatalogo('piso')"
           class="block w-full relative rounded-xl overflow-hidden mb-8 h-40 md:h-56 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
         >
-          <div
-            v-if="configStore.catalogos['piso_spc'].desktop_blur"
-            class="absolute inset-0 bg-cover bg-center hidden md:block"
-            :style="{ backgroundImage: `url(${configStore.catalogos['piso_spc'].desktop_blur})` }"
+          <LazyImage
+            :src="configStore.catalogos['piso_spc'].desktop_url"
+            :blur="configStore.catalogos['piso_spc'].desktop_blur"
+            :mobile-src="configStore.catalogos['piso_spc'].mobile_url || configStore.catalogos['piso_spc'].desktop_url"
+            :mobile-blur="configStore.catalogos['piso_spc'].mobile_blur || configStore.catalogos['piso_spc'].desktop_blur"
+            alt="Catálogo de Pisos"
+            class="absolute inset-0 w-full h-full"
           />
-          <div
-            v-if="configStore.catalogos['piso_spc'].mobile_blur || configStore.catalogos['piso_spc'].desktop_blur"
-            class="absolute inset-0 bg-cover bg-center md:hidden"
-            :style="{ backgroundImage: `url(${configStore.catalogos['piso_spc'].mobile_blur || configStore.catalogos['piso_spc'].desktop_blur})` }"
-          />
-          <picture class="absolute inset-0 w-full h-full">
-            <source
-              media="(max-width: 768px)"
-              :srcset="configStore.catalogos['piso_spc'].mobile_url || configStore.catalogos['piso_spc'].desktop_url"
-            />
-            <img
-              :src="configStore.catalogos['piso_spc'].desktop_url"
-              alt="Catálogo de Pisos"
-              class="w-full h-full object-cover"
-            />
-          </picture>
           <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-end px-6 pb-5">
             <p class="text-white font-heading text-lg md:text-2xl font-bold drop-shadow">Variedad en diseños y acabados</p>
           </div>
