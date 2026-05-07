@@ -2,12 +2,9 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNavigation } from '@/composables/useNavigation'
 import { useConfigStore } from '@/stores/config'
-import { useProductosStore } from '@/stores/productos'
-import { imageUrl } from '@/utils/imageUrl'
 
 const { navigateTo } = useNavigation()
 const configStore = useConfigStore()
-const productosStore = useProductosStore()
 
 // ── Hero ─────────────────────────────────────────────────────────────────────
 
@@ -103,33 +100,9 @@ let timer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   timer = setInterval(next, 5000)
-  productosStore.fetchProductos()
 })
 onUnmounted(() => {
   if (timer) clearInterval(timer)
-})
-
-// ── Líneas desde el backend ───────────────────────────────────────────────────
-const MELAMINA_BGS = ['bg-stone-200', 'bg-amber-100', 'bg-amber-700', 'bg-slate-400', 'bg-stone-400', 'bg-amber-200']
-
-const lineasMelamina = computed(() => {
-  const map = new Map<string, { imagen: string; totalColores: number }>()
-  for (const p of productosStore.productos) {
-    if (p.tipo !== 'MELAMINA') continue
-    const sub = p.subcategoria || 'Otros'
-    if (!map.has(sub)) map.set(sub, { imagen: '', totalColores: 0 })
-    const entry = map.get(sub)!
-    entry.totalColores += p.colores.length
-    if (!entry.imagen && p.colores[0]?.imagenes[0]?.url)
-      entry.imagen = imageUrl(p.colores[0].imagenes[0].url)
-  }
-  return Array.from(map.entries()).map(([nombre, data], i) => ({
-    nombre,
-    imagen: data.imagen,
-    descripcion: `${data.totalColores} colores`,
-    bg: MELAMINA_BGS[i % MELAMINA_BGS.length],
-    tipo: 'melamina',
-  }))
 })
 
 // ── Por qué Barroca ───────────────────────────────────────────────────────────
@@ -313,7 +286,7 @@ function irACatalogo(filtro?: string) {
           <h2 class="font-heading text-3xl md:text-4xl font-bold text-charcoal mb-2">Melaminas</h2>
           <div class="w-16 h-1 bg-gold mx-auto mb-6"></div>
           <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-            Explora nuestras líneas de melamina. Da clic en cada línea para ver todos los colores disponibles.
+            Explora nuestras melaminas con acabados de alta calidad. Da clic para ver todos los colores disponibles.
           </p>
         </div>
 
@@ -348,51 +321,6 @@ function irACatalogo(filtro?: string) {
             <p class="text-white font-heading text-lg md:text-2xl font-bold drop-shadow">Descubre todas nuestras líneas</p>
           </div>
         </button>
-
-        <!-- Skeleton mientras cargan los productos -->
-        <div v-if="productosStore.loading && !lineasMelamina.length" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          <div v-for="n in 4" :key="n" class="aspect-square rounded-xl bg-gray-200 animate-pulse"></div>
-        </div>
-
-        <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          <button
-            v-for="linea in lineasMelamina"
-            :key="linea.nombre"
-            @click="irACatalogo(linea.tipo)"
-            class="group relative rounded-xl overflow-hidden aspect-square shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-          >
-            <img
-              v-if="linea.imagen"
-              :src="linea.imagen"
-              :alt="linea.nombre"
-              class="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-            <div
-              v-else
-              class="w-full h-full flex items-center justify-center"
-              :class="linea.bg"
-            >
-              <div class="absolute inset-0 flex items-center justify-center opacity-10">
-                <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
-
-            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/85 transition-all duration-300"></div>
-
-            <div class="absolute bottom-0 left-0 right-0 p-4 text-left text-white">
-              <p class="font-heading font-bold text-sm md:text-base">{{ linea.nombre }}</p>
-              <p class="text-xs text-white/70 mt-0.5">{{ linea.descripcion }}</p>
-              <p class="text-xs font-heading uppercase tracking-wider text-gold mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Ver colores →
-              </p>
-            </div>
-          </button>
-        </div>
 
         <div class="text-center mt-8">
           <button
