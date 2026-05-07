@@ -31,12 +31,6 @@ export default defineConfig(({ mode }) => {
           target: backendUrl,
           changeOrigin: true,
         },
-        // Gemini API — evita CORS del navegador (el proxy corre en Node)
-        '/gemini-proxy': {
-          target: 'https://generativelanguage.googleapis.com',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/gemini-proxy/, ''),
-        },
       },
     },
   }

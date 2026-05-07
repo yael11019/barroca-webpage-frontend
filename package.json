@@ -11,10 +11,8 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
-    "@google/genai": "^1.49.0",
     "@svg-maps/mexico": "^2.0.0",
     "axios": "^1.13.5",
-    "openai": "^6.36.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.29",
     "vue-gtag": "^3.7.0",
