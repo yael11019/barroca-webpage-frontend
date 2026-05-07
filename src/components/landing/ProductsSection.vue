@@ -36,7 +36,7 @@ const fichasCache = reactive<Record<string, FichaTecnica[]>>({})
 
 async function openFichas(producto: ProductoCatalogo) {
   const cat = (producto.tipo ?? 'general').toLowerCase().replace(/\s+/g, '_')
-  fichasCategoria.value = producto.tipo
+  fichasCategoria.value = producto.tipo ?? ''
   fichasOpen.value = true
 
   if (fichasCache[cat]) {

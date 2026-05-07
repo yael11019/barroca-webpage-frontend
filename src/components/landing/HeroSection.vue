@@ -138,7 +138,7 @@ const lineasPisos = computed(() => {
   for (const p of productosStore.productos) {
     if (p.tipo === 'MELAMINA') continue
     const sub = p.subcategoria || p.tipo || 'Otros'
-    if (!map.has(sub)) map.set(sub, { imagen: '', totalColores: 0, tipo: p.tipo })
+    if (!map.has(sub)) map.set(sub, { imagen: '', totalColores: 0, tipo: p.tipo ?? '' })
     const entry = map.get(sub)!
     entry.totalColores += p.colores.length
     if (!entry.imagen && p.colores[0]?.imagenes[0]?.url)
