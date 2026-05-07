@@ -244,6 +244,7 @@ const isProcessing = ref(false)
 const processingError = ref<string | null>(null)
 const resultImage = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const previewOpen = ref(false)
 
 // ── Selección de material (Tipo → Producto/Línea → Color) ──────────────────
 const showroomTipo = ref<string | null>(null)
@@ -641,8 +642,9 @@ function resetShowroom() {
                   <img
                     v-if="resultImage"
                     :src="resultImage"
-                    class="w-full h-full object-cover"
+                    class="w-full h-full object-cover cursor-zoom-in"
                     alt="Visualización generada"
+                    @click="previewOpen = true"
                   />
                   <!-- Fallback: foto original si no hay resultado -->
                   <img
@@ -656,9 +658,18 @@ function resetShowroom() {
                     <span class="text-xs bg-black/50 text-white px-2.5 py-1 rounded-full font-heading font-semibold backdrop-blur-sm">
                       {{ showroomColor?.nombre }} · {{ showroomProducto?.nombre }}
                     </span>
-                    <span v-if="resultImage" class="text-xs bg-gold text-charcoal px-2 py-1 rounded-full font-heading font-bold">
+                    <button
+                      v-if="resultImage"
+                      type="button"
+                      @click="previewOpen = true"
+                      class="text-xs bg-gold hover:bg-gold-dark text-charcoal px-2 py-1 rounded-full font-heading font-bold inline-flex items-center gap-1 transition-colors"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 3h6v6M14 10l7-7M9 21H3v-6M10 14l-7 7"/>
+                      </svg>
                       Preview
-                    </span>
+                    </button>
                   </div>
                 </div>
 
@@ -807,6 +818,42 @@ function resetShowroom() {
 
       </div>
     </div>
+
+    <!-- ── Modal Preview de la imagen generada ────────────────────────── -->
+    <Transition name="fade">
+      <div
+        v-if="previewOpen && resultImage"
+        class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+        @click.self="previewOpen = false"
+      >
+        <button
+          type="button"
+          @click="previewOpen = false"
+          class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+          aria-label="Cerrar"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+
+        <div class="relative max-w-5xl w-full" @click.stop>
+          <img
+            :src="resultImage"
+            :alt="`Visualización con ${showroomColor?.nombre}`"
+            class="w-full h-auto max-h-[85vh] object-contain rounded-xl shadow-2xl"
+          />
+          <div class="absolute bottom-4 left-4 flex flex-wrap items-center gap-2">
+            <span class="text-xs sm:text-sm bg-black/60 text-white px-3 py-1.5 rounded-full font-heading font-semibold backdrop-blur-sm">
+              {{ showroomColor?.nombre }} · {{ showroomProducto?.nombre }}
+            </span>
+            <span class="text-xs sm:text-sm bg-gold text-charcoal px-3 py-1.5 rounded-full font-heading font-bold">
+              Preview
+            </span>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </section>
 </template>
 
