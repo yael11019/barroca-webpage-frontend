@@ -1,6 +1,7 @@
 // Tipo del catálogo público (API /api/public/productos)
 export interface ImagenCatalogo {
   url: string
+  blur?: string
   legend: 'ai_render' | 'accesorios_por_separado' | null
 }
 

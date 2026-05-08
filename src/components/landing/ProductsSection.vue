@@ -213,6 +213,7 @@ onMounted(() => {
               <LazyImage
                 v-if="color.imagenes.length"
                 :src="imageUrl(color.imagenes[0]?.url ?? '')"
+                :blur="color.imagenes[0]?.blur"
                 :alt="`${producto.nombre} — ${color.nombre}`"
                 class="w-full h-full"
                 img-class="group-hover:scale-105"
@@ -361,6 +362,7 @@ onMounted(() => {
               <LazyImage
                 v-if="modalColor?.imagenes.length"
                 :src="imageUrl(modalColor.imagenes[modalImageIdx]?.url ?? '')"
+                :blur="modalColor.imagenes[modalImageIdx]?.blur"
                 :alt="`${selectedProducto.nombre} — ${modalColor.nombre}`"
                 loading="eager"
                 class="w-full h-full"
@@ -403,7 +405,7 @@ onMounted(() => {
                 class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors"
                 :class="modalImageIdx === idx ? 'border-gold' : 'border-transparent hover:border-gray-300'"
               >
-                <LazyImage :src="imageUrl(img.url)" :alt="`${modalColor.nombre} ${idx + 1}`" class="w-full h-full" />
+                <LazyImage :src="imageUrl(img.url)" :blur="img.blur" :alt="`${modalColor.nombre} ${idx + 1}`" class="w-full h-full" />
               </button>
             </div>
 
