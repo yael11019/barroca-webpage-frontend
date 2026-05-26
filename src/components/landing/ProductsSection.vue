@@ -160,7 +160,7 @@ onMounted(() => {
         <h2 class="font-heading text-3xl md:text-4xl font-bold text-charcoal mb-2">Catálogo</h2>
         <div class="w-16 h-1 bg-gold mx-auto mb-6"></div>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-          Melaminas y pisos con diseño contemporáneo, acabados de alta calidad. Diseños inspirados en tendencias de Asia, Emiratos Árabes y Europa.
+          Melaminas y pisos con diseño contemporáneo. Acabados de alta calidad y diseños inspirados en tendencias de Asia, Emiratos Árabes y Europa.
         </p>
       </div>
 

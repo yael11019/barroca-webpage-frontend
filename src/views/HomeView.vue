@@ -4,9 +4,8 @@ import AppHeader from '@/components/landing/AppHeader.vue'
 import HeroSection from '@/components/landing/HeroSection.vue'
 import AboutSection from '@/components/landing/AboutSection.vue'
 import ProductsSection from '@/components/landing/ProductsSection.vue'
-import ContactSection from '@/components/landing/ContactSection.vue'
+import SucursalesDistribuidoresSection from '@/components/landing/SucursalesDistribuidoresSection.vue'
 import AppointmentSection from '@/components/landing/AppointmentSection.vue'
-import DistribuidoresSection from '@/components/landing/DistribuidoresSection.vue'
 import ServiciosSection from '@/components/landing/ServiciosSection.vue'
 import ProyectosSection from '@/components/landing/ProyectosSection.vue'
 import CarritoSection from '@/components/landing/CarritoSection.vue'
@@ -41,16 +40,15 @@ const { currentSection } = useNavigation()
         <ProductsSection />
         <AppFooter />
       </div>
-      <div v-show="currentSection === 'sucursales'" class="h-full overflow-y-auto">
-        <ContactSection />
+      <div
+        v-show="currentSection === 'sucursales-distribuidores' || currentSection === 'sucursales' || currentSection === 'distribuidores'"
+        class="h-full overflow-y-auto"
+      >
+        <SucursalesDistribuidoresSection />
         <AppFooter />
       </div>
       <div v-show="currentSection === 'agendar'" class="h-full overflow-y-auto">
         <AppointmentSection />
-        <AppFooter />
-      </div>
-      <div v-show="currentSection === 'distribuidores'" class="h-full overflow-y-auto">
-        <DistribuidoresSection />
         <AppFooter />
       </div>
       <div v-show="currentSection === 'servicios'" class="h-full overflow-y-auto">

@@ -174,7 +174,7 @@ function irACatalogo(filtro?: string) {
           :class="configStore.heroUrl ? 'text-white' : 'text-verde'"
         >
           Transformando lo ordinario<br>
-          <span :class="configStore.heroUrl ? 'text-white/80' : 'text-verde/80'">en extraordinario.</span>
+          <span :class="configStore.heroUrl ? 'text-white/80' : 'text-verde/80'">en extraordinario</span>
         </h1>
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
