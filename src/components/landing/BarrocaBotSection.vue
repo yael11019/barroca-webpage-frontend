@@ -349,6 +349,15 @@ function resetShowroom() {
   resultImage.value = null
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
+
+function probarOtroMaterial() {
+  showroomStep.value = 'material'
+  showroomTipo.value = null
+  showroomProducto.value = null
+  showroomColorIdx.value = 0
+  resultImage.value = null
+  processingError.value = null
+}
 </script>
 
 <template>
@@ -688,10 +697,10 @@ function resetShowroom() {
                 <!-- Acciones -->
                 <div class="flex flex-col gap-2 mt-auto">
                   <button
-                    @click="showroomStep = 'material'; showroomProducto = null; showroomTipo = null; uploadedPhoto = null; resultImage = null"
+                    @click="probarOtroMaterial"
                     class="w-full border border-charcoal text-charcoal hover:bg-charcoal hover:text-white font-heading font-semibold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors"
                   >
-                    Probar otro material
+                    Probar otro material con esta foto
                   </button>
                   <button
                     @click="resetShowroom"
