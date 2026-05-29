@@ -11,4 +11,6 @@ export interface Almacen {
   longitud: string
   horarios: Horarios
   activo: boolean
+  imagen: string | null
+  imagen_url: string | null
 }

@@ -4,6 +4,7 @@ import { useProductosStore } from '@/stores/productos'
 import type { ProductoCatalogo, ColorCatalogo } from '@/types/producto'
 import { imageUrl } from '@/utils/imageUrl'
 import api from '@/services/api'
+import ShowroomMaterialPicker from '@/components/landing/ShowroomMaterialPicker.vue'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 interface Mensaje {
@@ -56,7 +57,7 @@ const faqs = [
   // ── Ubicación ──────────────────────────────────────────────────────────────
   {
     keywords: ['ubicacion', 'ubicación', 'sucursal', 'tienda', 'direccion', 'dirección', 'donde', 'dónde', 'ubicados'],
-    respuesta: 'Contamos con sucursales en la **zona centro de México**. Escríbenos por WhatsApp y te indicamos la más cercana o coordinamos una visita. 📍\n\n**WhatsApp**: +52 417 160 1530',
+    respuesta: 'Contamos con sucursales en la **zona centro de México**. Escríbenos por WhatsApp y te indicamos la más cercana o coordinamos una visita. 📍\n\n**WhatsApp**: +52 443 339 6659',
   },
 
   // ── Horarios ───────────────────────────────────────────────────────────────
@@ -68,13 +69,13 @@ const faqs = [
   // ── Cotización ─────────────────────────────────────────────────────────────
   {
     keywords: ['cotizar', 'cotizacion', 'cotización', 'presupuesto', 'precio', 'cuanto cuesta', 'cuánto cuesta', 'cuanto vale', 'cobran'],
-    respuesta: 'Para cotizar, contáctanos por **WhatsApp al +52 417 160 1530** con:\n\n1. Material que necesitas (melamina, piso, etc.)\n2. Medidas o m² aproximados\n3. Servicio adicional (corte, enchapado)\n\nTe enviamos tu cotización personalizada a la brevedad. 📋',
+    respuesta: 'Para cotizar, contáctanos por **WhatsApp al +52 443 339 6659** con:\n\n1. Material que necesitas (melamina, piso, etc.)\n2. Medidas o m² aproximados\n3. Servicio adicional (corte, enchapado)\n\nTe enviamos tu cotización personalizada a la brevedad. 📋',
   },
 
   // ── Catálogo de melaminas ──────────────────────────────────────────────────
   {
     keywords: ['catalogo', 'catálogo', 'catalogo de melaminas', 'colores melamina', 'referencias', 'modelos'],
-    respuesta: 'Contamos con más de **200 referencias** en melamina:\n\n• **Sólidos** — blanco, negro, gris y más\n• **Vetas de madera** — roble, nogal, wengué, pino…\n• **Texturas metálicas y especiales**\n\nPuedes ver el catálogo en la sección de **Productos** o escribirnos para enviarte el PDF completo. 🎨\n\n**WhatsApp**: +52 417 160 1530',
+    respuesta: 'Contamos con más de **200 referencias** en melamina:\n\n• **Sólidos** — blanco, negro, gris y más\n• **Vetas de madera** — roble, nogal, wengué, pino…\n• **Texturas metálicas y especiales**\n\nPuedes ver el catálogo en la sección de **Productos** o escribirnos para enviarte el PDF completo. 🎨\n\n**WhatsApp**: +52 443 339 6659',
   },
 
   // ── Espesores de melamina ──────────────────────────────────────────────────
@@ -86,7 +87,7 @@ const faqs = [
   // ── Precios para distribuidor ──────────────────────────────────────────────
   {
     keywords: ['precio distribuidor', 'precio para distribuidor', 'precios mayoreo', 'precio mayorista', 'mayoreo', 'precio especial'],
-    respuesta: 'Sí contamos con **precios para distribuidor y mayoreo**. Para acceder a ellos:\n\n1. Visita la sección **Distribuidores** y llena tu solicitud\n2. O escríbenos directo por **WhatsApp al +52 417 160 1530**\n\nAnalizamos tu propuesta y te asignamos condiciones especiales. 🤝',
+    respuesta: 'Sí contamos con **precios para distribuidor y mayoreo**. Para acceder a ellos:\n\n1. Visita la sección **Distribuidores** y llena tu solicitud\n2. O escríbenos directo por **WhatsApp al +52 443 339 6659**\n\nAnalizamos tu propuesta y te asignamos condiciones especiales. 🤝',
   },
 
   // ── Tipo de tablero ────────────────────────────────────────────────────────
@@ -98,31 +99,31 @@ const faqs = [
   // ── Corte a medida ─────────────────────────────────────────────────────────
   {
     keywords: ['corte', 'cortar', 'costo corte', 'precio corte', 'cuanto corte', 'cuánto corte', 'servicio de corte'],
-    respuesta: 'Sí ofrecemos **corte a medida** con tolerancias exactas.\n\nEl costo depende de la cantidad de cortes y el material. Para cotizar envíanos tu **lista de medidas** por **WhatsApp al +52 417 160 1530** y te damos precio inmediato. ✂️',
+    respuesta: 'Sí ofrecemos **corte a medida** con tolerancias exactas.\n\nEl costo depende de la cantidad de cortes y el material. Para cotizar envíanos tu **lista de medidas** por **WhatsApp al +52 443 339 6659** y te damos precio inmediato. ✂️',
   },
 
   // ── Despiece ───────────────────────────────────────────────────────────────
   {
     keywords: ['despiece', 'optimizacion', 'optimización', 'lista de cortes', 'plano', 'distribucion de cortes', 'ayudan con medidas'],
-    respuesta: 'Sí, te ayudamos con el **despiece de tus medidas**. Puedes enviarnos:\n\n• Tu lista de piezas (ancho × alto en mm o cm)\n• El material y espesor que necesitas\n\nNosotros optimizamos los cortes para minimizar desperdicio. Escríbenos por **WhatsApp al +52 417 160 1530**. 📐',
+    respuesta: 'Sí, te ayudamos con el **despiece de tus medidas**. Puedes enviarnos:\n\n• Tu lista de piezas (ancho × alto en mm o cm)\n• El material y espesor que necesitas\n\nNosotros optimizamos los cortes para minimizar desperdicio. Escríbenos por **WhatsApp al +52 443 339 6659**. 📐',
   },
 
   // ── Enchapado ─────────────────────────────────────────────────────────────
   {
     keywords: ['enchapado', 'cuanto tarda enchapado', 'cuánto tarda enchapado', 'tiempo enchapado', 'tarda el enchapado'],
-    respuesta: 'El servicio de **enchapado de cubrecantos** se realiza el **mismo día** si tu material llega en la mañana, o al siguiente día hábil.\n\nEl tiempo exacto depende de la cantidad de piezas. Confirma por **WhatsApp al +52 417 160 1530**. ⏱️',
+    respuesta: 'El servicio de **enchapado de cubrecantos** se realiza el **mismo día** si tu material llega en la mañana, o al siguiente día hábil.\n\nEl tiempo exacto depende de la cantidad de piezas. Confirma por **WhatsApp al +52 443 339 6659**. ⏱️',
   },
 
   // ── Tipos de canto ─────────────────────────────────────────────────────────
   {
     keywords: ['tipo de canto', 'tipos de canto', 'canto pvc', 'canto madera', 'cubrecantos', 'que cantos', 'qué cantos'],
-    respuesta: 'Manejamos cubrecantos en **PVC** en distintos acabados y colores que combinan con nuestra línea de melaminas:\n\n• Cantos lisos y con textura\n• Colores coordinados con cada referencia\n• Anchos de 22 mm y 44 mm\n\nConsulta disponibilidad por **WhatsApp al +52 417 160 1530**. 🪛',
+    respuesta: 'Manejamos cubrecantos en **PVC** en distintos acabados y colores que combinan con nuestra línea de melaminas:\n\n• Cantos lisos y con textura\n• Colores coordinados con cada referencia\n• Anchos de 22 mm y 44 mm\n\nConsulta disponibilidad por **WhatsApp al +52 443 339 6659**. 🪛',
   },
 
   // ── Corte y enchapado juntos ───────────────────────────────────────────────
   {
     keywords: ['corte y enchapado', 'enchapado y corte', 'juntos', 'los dos servicios', 'combo', 'ambos servicios'],
-    respuesta: '¡Sí! Puedes solicitar **corte a medida + enchapado de cubrecantos** en un solo pedido.\n\nEs uno de nuestros servicios más solicitados porque recibes tus piezas listas para ensamblar. Envíanos tu despiece por **WhatsApp al +52 417 160 1530** y cotizamos todo junto. ✅',
+    respuesta: '¡Sí! Puedes solicitar **corte a medida + enchapado de cubrecantos** en un solo pedido.\n\nEs uno de nuestros servicios más solicitados porque recibes tus piezas listas para ensamblar. Envíanos tu despiece por **WhatsApp al +52 443 339 6659** y cotizamos todo junto. ✅',
   },
 
   // ── Piso SPC agua ──────────────────────────────────────────────────────────
@@ -134,25 +135,25 @@ const faqs = [
   // ── Precio piso SPC ────────────────────────────────────────────────────────
   {
     keywords: ['precio piso', 'cuanto piso', 'cuánto piso', 'caja spc', 'costo piso', 'precio spc', 'precio caja'],
-    respuesta: 'El precio del **Piso SPC** varía según el modelo, espesor y metraje por caja. Para darte el precio actualizado escríbenos por **WhatsApp al +52 417 160 1530** indicando el modelo que te interesa. 📦',
+    respuesta: 'El precio del **Piso SPC** varía según el modelo, espesor y metraje por caja. Para darte el precio actualizado escríbenos por **WhatsApp al +52 443 339 6659** indicando el modelo que te interesa. 📦',
   },
 
   // ── Afilado de discos ──────────────────────────────────────────────────────
   {
     keywords: ['afilar', 'afilado', 'disco', 'discos', 'sierra', 'cuchilla', 'cuanto afilar', 'precio afilar'],
-    respuesta: 'Ofrecemos **afilado de discos** a través de nuestro aliado **Afilados del Bajío**. Este servicio está disponible para todos, no solo clientes de Barroca.\n\nAfilan discos para:\n• Sierra circular\n• Caladora\n• Router / fresadora\n\nPara precios y tiempos, contáctanos por **WhatsApp al +52 417 160 1530**. 🔪',
+    respuesta: 'Ofrecemos **afilado de discos** a través de nuestro aliado **Afilados del Bajío**. Este servicio está disponible para todos, no solo clientes de Barroca.\n\nAfilan discos para:\n• Sierra circular\n• Caladora\n• Router / fresadora\n\nPara precios y tiempos, contáctanos por **WhatsApp al +52 443 339 6659**. 🔪',
   },
 
   // ── Envíos ─────────────────────────────────────────────────────────────────
   {
     keywords: ['envio', 'envío', 'domicilio', 'entregan', 'llevan', 'reparto', 'mandan', 'envian', 'envían', 'flete'],
-    respuesta: 'Sí hacemos **envíos a domicilio**, disponible exclusivamente en compras realizadas con nosotros.\n\nTiempos de entrega aproximados:\n• **Local**: 1-2 días hábiles\n• **Zona Centro**: 2-3 días hábiles\n• **Foráneo**: 4-6 días hábiles\n\nConsulta disponibilidad de envío a tu zona por **WhatsApp al +52 417 160 1530**. 🚚',
+    respuesta: 'Sí hacemos **envíos a domicilio**, disponible exclusivamente en compras realizadas con nosotros.\n\nTiempos de entrega aproximados:\n• **Local**: 1-2 días hábiles\n• **Zona Centro**: 2-3 días hábiles\n• **Foráneo**: 4-6 días hábiles\n\nConsulta disponibilidad de envío a tu zona por **WhatsApp al +52 443 339 6659**. 🚚',
   },
 
   // ── Garantía ───────────────────────────────────────────────────────────────
   {
     keywords: ['garantia', 'garantía', 'devolu', 'cambio', 'defecto', 'falla', 'danado', 'dañado'],
-    respuesta: 'Todos nuestros productos tienen **garantía de calidad**. Si recibes un producto con defecto de fabricación, lo reemplazamos sin costo dentro de los primeros **7 días** de recibida la entrega. ✅\n\nEscríbenos por **WhatsApp al +52 417 160 1530** con foto del producto.',
+    respuesta: 'Todos nuestros productos tienen **garantía de calidad**. Si recibes un producto con defecto de fabricación, lo reemplazamos sin costo dentro de los primeros **7 días** de recibida la entrega. ✅\n\nEscríbenos por **WhatsApp al +52 443 339 6659** con foto del producto.',
   },
 
   // ── Showroom ───────────────────────────────────────────────────────────────
@@ -164,13 +165,13 @@ const faqs = [
   // ── Contacto ───────────────────────────────────────────────────────────────
   {
     keywords: ['whatsapp', 'telefono', 'teléfono', 'llamar', 'contacto', 'contactar', 'numero', 'número', 'correo', 'email'],
-    respuesta: 'Puedes contactarnos por:\n\n• **WhatsApp**: +52 417 160 1530\n• **Correo**: ventas@barroca.mx\n\nHorario: Lun–Vie 8:00–17:00, Sáb 8:00–13:00 📞',
+    respuesta: 'Puedes contactarnos por:\n\n• **WhatsApp**: +52 443 339 6659\n• **Llamadas**: +52 417 178 0247\n• **Correo**: marketingbarroca@gmail.com\n\nHorario: Lun–Vie 8:00–17:00, Sáb 8:00–13:00 📞',
   },
 
   // ── Distribuidores ─────────────────────────────────────────────────────────
   {
     keywords: ['distribuidor', 'distribui', 'revendedor', 'reventa', 'ser distribuidor'],
-    respuesta: 'Si te interesa ser distribuidor Barroca, visita la sección de **Distribuidores** y llena el formulario de solicitud. ¡Con gusto analizamos tu propuesta! 🤝\n\nO escríbenos directo por **WhatsApp al +52 417 160 1530**.',
+    respuesta: 'Si te interesa ser distribuidor Barroca, visita la sección de **Distribuidores** y llena el formulario de solicitud. ¡Con gusto analizamos tu propuesta! 🤝\n\nO escríbenos directo por **WhatsApp al +52 443 339 6659**.',
   },
 
   // ── Saludos ────────────────────────────────────────────────────────────────
@@ -182,11 +183,11 @@ const faqs = [
   // ── Despedida ──────────────────────────────────────────────────────────────
   {
     keywords: ['gracias', 'thanks', 'perfecto', 'excelente', 'genial', 'muy bien', 'listo', 'ok'],
-    respuesta: '¡Con mucho gusto! 😊 Si tienes más preguntas, aquí estaré. También puedes contactarnos por **WhatsApp al +52 417 160 1530** para atención personalizada.',
+    respuesta: '¡Con mucho gusto! 😊 Si tienes más preguntas, aquí estaré. También puedes contactarnos por **WhatsApp al +52 443 339 6659** para atención personalizada.',
   },
 ]
 
-const defaultResponse = 'No tengo información específica sobre eso, pero con gusto te atendemos directamente. 😊\n\nEscríbenos por **WhatsApp al +52 417 160 1530** o usa los botones de abajo para preguntas frecuentes.'
+const defaultResponse = 'No tengo información específica sobre eso, pero con gusto te atendemos directamente. 😊\n\nEscríbenos por **WhatsApp al +52 443 339 6659** o usa los botones de abajo para preguntas frecuentes.'
 
 function normalize(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -246,47 +247,82 @@ const resultImage = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const previewOpen = ref(false)
 
-// ── Selección de material (Tipo → Producto/Línea → Color) ──────────────────
+// ── Modo del showroom ──────────────────────────────────────────────────────
+// 'single'   = un solo material (melamina o piso)
+// 'combinar' = melamina (muebles) + piso (suelo) en una misma visualización
+type ShowroomModo = 'single' | 'combinar'
+const showroomModo = ref<ShowroomModo>('single')
+
+function productosDeTipo(tipoKey: string): ProductoCatalogo[] {
+  return productosStore.productos.filter((p: ProductoCatalogo) =>
+    p.tipo?.toUpperCase().startsWith(tipoKey) && p.colores.length > 0
+  )
+}
+
+const melaminasDisponibles = computed(() => productosDeTipo('MELAMINA'))
+const pisosDisponibles = computed(() => productosDeTipo('PISO'))
+const hayMelaminas = computed(() => melaminasDisponibles.value.length > 0)
+const hayPisos = computed(() => pisosDisponibles.value.length > 0)
+const puedeCombinar = computed(() => hayMelaminas.value && hayPisos.value)
+
+// ── Selección single (Tipo → Producto/Línea → Color) ───────────────────────
 const showroomTipo = ref<string | null>(null)
 const showroomProducto = ref<ProductoCatalogo | null>(null)
 const showroomColorIdx = ref<number>(0)
 
-const TIPOS_SHOWROOM = [
-  { key: 'MELAMINA', label: 'Melaminas' },
-  { key: 'PISO',     label: 'Piso' },
-]
-
-const tiposDisponibles = computed(() =>
-  TIPOS_SHOWROOM.filter(t =>
-    productosStore.productos.some((p: ProductoCatalogo) =>
-      p.tipo?.toUpperCase().startsWith(t.key) && p.colores.length > 0
-    )
-  )
+const productosDelTipo = computed((): ProductoCatalogo[] =>
+  showroomTipo.value ? productosDeTipo(showroomTipo.value.toUpperCase()) : []
 )
-
-const productosDelTipo = computed((): ProductoCatalogo[] => {
-  if (!showroomTipo.value) return []
-  return productosStore.productos.filter((p: ProductoCatalogo) =>
-    p.tipo?.toUpperCase().startsWith(showroomTipo.value!.toUpperCase()) && p.colores.length > 0
-  )
-})
 
 const showroomColor = computed((): ColorCatalogo | null => {
   if (!showroomProducto.value) return null
   return showroomProducto.value.colores[showroomColorIdx.value] ?? showroomProducto.value.colores[0] ?? null
 })
 
-const puedeAvanzar = computed(() => !!showroomProducto.value && !!showroomColor.value)
+// ── Selección combinar (melamina + piso, AMBOS obligatorios) ───────────────
+const melaminaProducto = ref<ProductoCatalogo | null>(null)
+const melaminaColorIdx = ref<number>(0)
+const pisoProducto = ref<ProductoCatalogo | null>(null)
+const pisoColorIdx = ref<number>(0)
 
-function selectTipo(tipo: string) {
+const melaminaColor = computed((): ColorCatalogo | null => {
+  if (!melaminaProducto.value) return null
+  return melaminaProducto.value.colores[melaminaColorIdx.value] ?? melaminaProducto.value.colores[0] ?? null
+})
+const pisoColor = computed((): ColorCatalogo | null => {
+  if (!pisoProducto.value) return null
+  return pisoProducto.value.colores[pisoColorIdx.value] ?? pisoProducto.value.colores[0] ?? null
+})
+
+// Combinar obliga a tener melamina+color Y piso+color antes de continuar
+const puedeAvanzar = computed(() =>
+  showroomModo.value === 'combinar'
+    ? !!melaminaColor.value && !!pisoColor.value
+    : !!showroomProducto.value && !!showroomColor.value
+)
+
+function selectModo(modo: ShowroomModo, tipo: string | null = null) {
+  showroomModo.value = modo
   showroomTipo.value = tipo
   showroomProducto.value = null
   showroomColorIdx.value = 0
+  melaminaProducto.value = null
+  melaminaColorIdx.value = 0
+  pisoProducto.value = null
+  pisoColorIdx.value = 0
 }
 
 function selectProducto(p: ProductoCatalogo) {
   showroomProducto.value = p
   showroomColorIdx.value = 0
+}
+function selectMelamina(p: ProductoCatalogo) {
+  melaminaProducto.value = p
+  melaminaColorIdx.value = 0
+}
+function selectPiso(p: ProductoCatalogo) {
+  pisoProducto.value = p
+  pisoColorIdx.value = 0
 }
 
 // ── Manejo de archivo ──────────────────────────────────────────────────────
@@ -310,17 +346,40 @@ function loadFile(file: File) {
 }
 
 // ── Visualización ─────────────────────────────────────────────────────────
+// TODO: poner en false cuando el backend soporte modo combinado.
+// Mientras tanto, el modo combinar simula el render para poder probar el flujo.
+const MOCK_COMBINADO = true
+
 async function runVisualization() {
-  if (!uploadedFile.value || !showroomProducto.value || !showroomColor.value) return
+  if (!uploadedFile.value || !puedeAvanzar.value) return
   isProcessing.value = true
   processingError.value = null
   resultImage.value = null
 
+  // Mock temporal del modo combinado (endpoint en construcción)
+  if (showroomModo.value === 'combinar' && MOCK_COMBINADO) {
+    await new Promise(r => setTimeout(r, 1500))
+    resultImage.value = uploadedPhoto.value
+    showroomStep.value = 'result'
+    isProcessing.value = false
+    return
+  }
+
   try {
     const formData = new FormData()
     formData.append('imagen', uploadedFile.value)
-    formData.append('producto_id', String(showroomProducto.value.id))
-    formData.append('color_nombre', showroomColor.value.nombre)
+
+    if (showroomModo.value === 'combinar') {
+      formData.append('modo', 'combinado')
+      formData.append('melamina_producto_id', String(melaminaProducto.value!.id))
+      formData.append('melamina_color_nombre', melaminaColor.value!.nombre)
+      formData.append('piso_producto_id', String(pisoProducto.value!.id))
+      formData.append('piso_color_nombre', pisoColor.value!.nombre)
+    } else {
+      // Modo single: payload idéntico al actual (no se rompe el flujo vigente)
+      formData.append('producto_id', String(showroomProducto.value!.id))
+      formData.append('color_nombre', showroomColor.value!.nombre)
+    }
 
     const { data } = await api.post('/api/public/visualizador', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -337,26 +396,32 @@ async function runVisualization() {
   }
 }
 
-function resetShowroom() {
-  showroomStep.value = 'material'
+function limpiarSeleccion() {
+  showroomModo.value = 'single'
   showroomTipo.value = null
   showroomProducto.value = null
   showroomColorIdx.value = 0
+  melaminaProducto.value = null
+  melaminaColorIdx.value = 0
+  pisoProducto.value = null
+  pisoColorIdx.value = 0
+  resultImage.value = null
+  processingError.value = null
+}
+
+function resetShowroom() {
+  showroomStep.value = 'material'
+  limpiarSeleccion()
   uploadedPhoto.value = null
   uploadedFile.value = null
   isProcessing.value = false
-  processingError.value = null
-  resultImage.value = null
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
 function probarOtroMaterial() {
+  // Mantiene la foto, limpia la selección de material
   showroomStep.value = 'material'
-  showroomTipo.value = null
-  showroomProducto.value = null
-  showroomColorIdx.value = 0
-  resultImage.value = null
-  processingError.value = null
+  limpiarSeleccion()
 }
 </script>
 
@@ -445,102 +510,94 @@ function probarOtroMaterial() {
               <div v-if="showroomStep === 'material'" key="step1" class="flex-1 p-5 overflow-y-auto space-y-5">
 
                 <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider">
-                  1. Elige un material
+                  1. ¿Qué quieres visualizar?
                 </p>
 
                 <!-- Loading del catálogo -->
-                <div v-if="productosStore.loading && !tiposDisponibles.length" class="flex items-center gap-2 text-gray-400 text-xs">
+                <div v-if="productosStore.loading && !hayMelaminas && !hayPisos" class="flex items-center gap-2 text-gray-400 text-xs">
                   <div class="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
                   Cargando catálogo...
                 </div>
 
                 <template v-else>
-                  <!-- Selector de tipo (categoría) -->
-                  <div>
-                    <p class="text-xs text-gray-400 font-heading uppercase tracking-wider mb-2">Categoría</p>
-                    <div class="flex gap-2 flex-wrap">
-                      <button
-                        v-for="tipo in tiposDisponibles"
-                        :key="tipo.key"
-                        @click="selectTipo(tipo.key)"
-                        class="px-4 py-1.5 rounded-full text-xs font-heading font-semibold border transition-colors"
-                        :class="showroomTipo === tipo.key
-                          ? 'bg-gold text-charcoal border-gold'
-                          : 'border-gray-200 text-gray-500 hover:border-gold hover:text-charcoal'"
-                      >
-                        {{ tipo.label }}
-                      </button>
-                    </div>
+                  <!-- Selector de modo -->
+                  <div class="grid grid-cols-3 gap-2">
+                    <button
+                      v-if="hayMelaminas"
+                      @click="selectModo('single', 'MELAMINA')"
+                      class="px-2 py-2 rounded-lg text-xs font-heading font-semibold border transition-colors leading-tight"
+                      :class="showroomModo === 'single' && showroomTipo === 'MELAMINA'
+                        ? 'bg-gold text-charcoal border-gold'
+                        : 'border-gray-200 text-gray-500 hover:border-gold hover:text-charcoal'"
+                    >
+                      Solo melamina
+                    </button>
+                    <button
+                      v-if="hayPisos"
+                      @click="selectModo('single', 'PISO')"
+                      class="px-2 py-2 rounded-lg text-xs font-heading font-semibold border transition-colors leading-tight"
+                      :class="showroomModo === 'single' && showroomTipo === 'PISO'
+                        ? 'bg-gold text-charcoal border-gold'
+                        : 'border-gray-200 text-gray-500 hover:border-gold hover:text-charcoal'"
+                    >
+                      Solo piso
+                    </button>
+                    <button
+                      v-if="puedeCombinar"
+                      @click="selectModo('combinar')"
+                      class="px-2 py-2 rounded-lg text-xs font-heading font-semibold border transition-colors leading-tight"
+                      :class="showroomModo === 'combinar'
+                        ? 'bg-gold text-charcoal border-gold'
+                        : 'border-gray-200 text-gray-500 hover:border-gold hover:text-charcoal'"
+                    >
+                      Combinar
+                    </button>
                   </div>
 
-                  <!-- Selector de línea/producto -->
-                  <div v-if="showroomTipo">
-                    <p class="text-xs text-gray-400 font-heading uppercase tracking-wider mb-2">Línea</p>
-                    <div class="flex flex-col gap-2">
-                      <button
-                        v-for="p in productosDelTipo"
-                        :key="p.id"
-                        @click="selectProducto(p)"
-                        class="flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left"
-                        :class="showroomProducto?.id === p.id
-                          ? 'border-gold bg-gold/5 shadow-sm'
-                          : 'border-gray-200 hover:border-gold/50 hover:bg-gray-50'"
-                      >
-                        <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                          <img
-                            v-if="p.colores[0]?.imagenes[0]"
-                            :src="imageUrl(p.colores[0].imagenes[0].url)"
-                            :alt="p.nombre"
-                            class="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-xs font-heading font-bold text-charcoal truncate">{{ p.nombre }}</p>
-                          <p class="text-xs text-gray-400">{{ p.colores.length }} colores</p>
-                        </div>
-                        <svg
-                          v-if="showroomProducto?.id === p.id"
-                          class="w-4 h-4 text-gold flex-shrink-0"
-                          fill="currentColor" viewBox="0 0 20 20"
-                        >
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  <!-- Modo single: un material -->
+                  <ShowroomMaterialPicker
+                    v-if="showroomModo === 'single' && showroomTipo"
+                    :productos="productosDelTipo"
+                    :producto="showroomProducto"
+                    :color-idx="showroomColorIdx"
+                    @select-producto="selectProducto"
+                    @select-color="showroomColorIdx = $event"
+                  />
 
-                  <!-- Selector de color -->
-                  <div v-if="showroomProducto">
-                    <p class="text-xs text-gray-400 font-heading uppercase tracking-wider mb-2">Color</p>
-                    <div class="flex flex-wrap gap-1.5 mb-3">
-                      <button
-                        v-for="(color, idx) in showroomProducto.colores"
-                        :key="color.nombre"
-                        @click="showroomColorIdx = idx"
-                        class="text-[10px] font-heading px-2 py-0.5 rounded-full border transition-colors whitespace-nowrap"
-                        :class="showroomColorIdx === idx
-                          ? 'bg-gold text-charcoal border-gold'
-                          : 'border-gray-200 text-gray-500 hover:border-gold/60 hover:text-charcoal'"
-                      >
-                        {{ color.nombre }}
-                      </button>
-                    </div>
-
-                    <!-- Preview del color seleccionado -->
-                    <div v-if="showroomColor" class="rounded-xl overflow-hidden aspect-video bg-gray-100">
-                      <img
-                        v-if="showroomColor.imagenes[0]"
-                        :src="imageUrl(showroomColor.imagenes[0].url)"
-                        :alt="showroomColor.nombre"
-                        class="w-full h-full object-cover"
-                        loading="lazy"
+                  <!-- Modo combinar: melamina (muebles) + piso (suelo) -->
+                  <template v-else-if="showroomModo === 'combinar'">
+                    <div class="rounded-xl border border-gray-100 p-3">
+                      <p class="font-heading font-bold text-charcoal text-xs mb-3 flex items-center gap-1.5">
+                        🪵 Melamina <span class="text-gray-400 font-normal normal-case">(muebles)</span>
+                      </p>
+                      <ShowroomMaterialPicker
+                        :productos="melaminasDisponibles"
+                        :producto="melaminaProducto"
+                        :color-idx="melaminaColorIdx"
+                        @select-producto="selectMelamina"
+                        @select-color="melaminaColorIdx = $event"
                       />
                     </div>
-                  </div>
+                    <div class="rounded-xl border border-gray-100 p-3">
+                      <p class="font-heading font-bold text-charcoal text-xs mb-3 flex items-center gap-1.5">
+                        🟫 Piso <span class="text-gray-400 font-normal normal-case">(suelo)</span>
+                      </p>
+                      <ShowroomMaterialPicker
+                        :productos="pisosDisponibles"
+                        :producto="pisoProducto"
+                        :color-idx="pisoColorIdx"
+                        @select-producto="selectPiso"
+                        @select-color="pisoColorIdx = $event"
+                      />
+                    </div>
+                    <p v-if="!puedeAvanzar" class="text-[11px] text-gray-400 text-center">
+                      Elige una melamina y un piso para continuar.
+                    </p>
+                  </template>
 
                   <!-- Botón continuar -->
                   <button
+                    v-if="showroomTipo || showroomModo === 'combinar'"
                     @click="showroomStep = 'upload'"
                     :disabled="!puedeAvanzar"
                     class="w-full bg-gold hover:bg-gold-dark disabled:opacity-40 disabled:cursor-not-allowed text-charcoal font-heading font-bold py-2.5 rounded-xl text-sm uppercase tracking-wider transition-colors"
@@ -562,21 +619,47 @@ function probarOtroMaterial() {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                   </button>
-                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                    <img
-                      v-if="showroomColor?.imagenes[0]"
-                      :src="imageUrl(showroomColor.imagenes[0].url)"
-                      :alt="showroomColor.nombre"
-                      class="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div class="min-w-0">
-                    <p class="text-xs text-gray-400 truncate">{{ showroomProducto?.nombre }}</p>
-                    <p class="font-heading font-bold text-charcoal text-sm truncate">{{ showroomColor?.nombre }}</p>
-                  </div>
+                  <!-- Single: un material -->
+                  <template v-if="showroomModo === 'single'">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                      <img
+                        v-if="showroomColor?.imagenes[0]"
+                        :src="imageUrl(showroomColor.imagenes[0].url)"
+                        :alt="showroomColor.nombre"
+                        class="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-xs text-gray-400 truncate">{{ showroomProducto?.nombre }}</p>
+                      <p class="font-heading font-bold text-charcoal text-sm truncate">{{ showroomColor?.nombre }}</p>
+                    </div>
+                  </template>
+
+                  <!-- Combinar: melamina + piso -->
+                  <template v-else>
+                    <div class="flex -space-x-2 flex-shrink-0">
+                      <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 ring-2 ring-white">
+                        <img v-if="melaminaColor?.imagenes[0]" :src="imageUrl(melaminaColor.imagenes[0].url)" :alt="melaminaColor.nombre" class="w-full h-full object-cover" />
+                      </div>
+                      <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 ring-2 ring-white">
+                        <img v-if="pisoColor?.imagenes[0]" :src="imageUrl(pisoColor.imagenes[0].url)" :alt="pisoColor.nombre" class="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-xs text-gray-400 truncate">🪵 {{ melaminaColor?.nombre }}</p>
+                      <p class="text-xs text-gray-400 truncate">🟫 {{ pisoColor?.nombre }}</p>
+                    </div>
+                  </template>
                 </div>
 
-                <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider">2. Sube una foto de tu espacio</p>
+                <div>
+                  <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider">
+                    2. Sube una foto del espacio que quieres modificar
+                  </p>
+                  <p class="text-xs text-gray-400 mt-1">
+                    Asegúrate de que se vea suficiente del espacio para poder modificarlo<span v-if="showroomModo === 'combinar'">, tanto el piso como las superficies donde irá la melamina</span>.
+                  </p>
+                </div>
 
                 <!-- Drop zone -->
                 <div
@@ -643,7 +726,8 @@ function probarOtroMaterial() {
               <div v-if="showroomStep === 'result'" key="step3" class="flex-1 p-5 flex flex-col gap-4">
 
                 <p class="font-heading font-bold text-charcoal text-xs uppercase tracking-wider">
-                  3. Tu espacio con {{ showroomColor?.nombre }}
+                  <template v-if="showroomModo === 'combinar'">3. Tu espacio con {{ melaminaColor?.nombre }} + {{ pisoColor?.nombre }}</template>
+                  <template v-else>3. Tu espacio con {{ showroomColor?.nombre }}</template>
                 </p>
 
                 <!-- Resultado generado -->
@@ -660,11 +744,19 @@ function probarOtroMaterial() {
                     v-else-if="uploadedPhoto"
                     :src="uploadedPhoto"
                     class="w-full h-full object-cover"
-                    alt="Tu espacio"
+                    alt="Espacio del usuario"
                   />
                   <!-- Badge -->
-                  <div class="absolute bottom-3 left-3 flex items-center gap-1.5">
-                    <span class="text-xs bg-black/50 text-white px-2.5 py-1 rounded-full font-heading font-semibold backdrop-blur-sm">
+                  <div class="absolute bottom-3 left-3 flex flex-wrap items-center gap-1.5">
+                    <template v-if="showroomModo === 'combinar'">
+                      <span class="text-xs bg-black/50 text-white px-2.5 py-1 rounded-full font-heading font-semibold backdrop-blur-sm">
+                        🪵 {{ melaminaColor?.nombre }}
+                      </span>
+                      <span class="text-xs bg-black/50 text-white px-2.5 py-1 rounded-full font-heading font-semibold backdrop-blur-sm">
+                        🟫 {{ pisoColor?.nombre }}
+                      </span>
+                    </template>
+                    <span v-else class="text-xs bg-black/50 text-white px-2.5 py-1 rounded-full font-heading font-semibold backdrop-blur-sm">
                       {{ showroomColor?.nombre }} · {{ showroomProducto?.nombre }}
                     </span>
                     <button
@@ -682,8 +774,30 @@ function probarOtroMaterial() {
                   </div>
                 </div>
 
-                <!-- Comparación: miniatura del material -->
-                <div v-if="showroomColor?.imagenes[0]" class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <!-- Comparación: material(es) aplicado(s) -->
+                <!-- Combinar -->
+                <div v-if="showroomModo === 'combinar'" class="grid grid-cols-2 gap-2">
+                  <div v-if="melaminaColor?.imagenes[0]" class="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                      <img :src="imageUrl(melaminaColor.imagenes[0].url)" :alt="melaminaColor.nombre" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[10px] text-gray-400 font-heading">🪵 Melamina</p>
+                      <p class="text-xs font-heading font-bold text-charcoal truncate">{{ melaminaColor.nombre }}</p>
+                    </div>
+                  </div>
+                  <div v-if="pisoColor?.imagenes[0]" class="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                      <img :src="imageUrl(pisoColor.imagenes[0].url)" :alt="pisoColor.nombre" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[10px] text-gray-400 font-heading">🟫 Piso</p>
+                      <p class="text-xs font-heading font-bold text-charcoal truncate">{{ pisoColor.nombre }}</p>
+                    </div>
+                  </div>
+                </div>
+                <!-- Single -->
+                <div v-else-if="showroomColor?.imagenes[0]" class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                     <img :src="imageUrl(showroomColor.imagenes[0].url)" :alt="showroomColor.nombre" class="w-full h-full object-cover" />
                   </div>

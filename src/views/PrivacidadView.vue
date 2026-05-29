@@ -102,10 +102,10 @@
             Cancelacion u Oposicion</strong> de sus datos personales enviando un correo a:
           </p>
           <a
-            href="mailto:contacto@barroca.com"
+            href="mailto:marketingbarroca@gmail.com"
             class="inline-block mt-3 text-gold hover:text-gold-dark font-heading font-semibold transition-colors"
           >
-            contacto@barroca.com
+            marketingbarroca@gmail.com
           </a>
         </section>
 

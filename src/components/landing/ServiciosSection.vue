@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Mexico from '@svg-maps/mexico'
 import api from '@/services/api'
 
@@ -47,6 +47,46 @@ async function fetchVideos() {
   } finally {
     videosLoading.value = false
   }
+}
+
+// ── Imágenes de servicios (API /api/public/servicios) ──────────────────────
+interface ServicioImagen {
+  id: number
+  slug: string
+  nombre: string
+  order: number
+  is_active: boolean
+  image_url: string
+  blur_placeholder: string | null
+}
+
+// Mapea el id local del servicio → slug que devuelve el endpoint /servicios
+const SERVICIO_SLUG: Record<string, string> = {
+  cortes:      'cortes',
+  cubrecantos: 'enchapado',
+  afilado:     'afilado',
+  envio:       'envios',
+  asesoria:    'asesoria',
+}
+
+const serviciosImagenes = ref<Record<string, ServicioImagen>>({})
+
+async function fetchServiciosImagenes() {
+  try {
+    const { data } = await api.get('/api/public/servicios')
+    const map: Record<string, ServicioImagen> = {}
+    for (const s of (data.data ?? []) as ServicioImagen[]) {
+      if (s.is_active && s.image_url) map[s.slug] = s
+    }
+    serviciosImagenes.value = map
+  } catch {
+    // Sin imágenes disponibles: se muestran los placeholders con ícono
+  }
+}
+
+function imagenServicio(id: string): ServicioImagen | null {
+  const slug = SERVICIO_SLUG[id]
+  return slug ? serviciosImagenes.value[slug] ?? null : null
 }
 
 // ── Servicios ──────────────────────────────────────────────────────────────
@@ -100,6 +140,11 @@ const servicios = [
   },
 ]
 
+// Servicios con su imagen del backend ya resuelta (o null si aún no hay)
+const serviciosConImagen = computed(() =>
+  servicios.map(s => ({ ...s, imagen: imagenServicio(s.id) })),
+)
+
 // ── Tiempos de entrega ─────────────────────────────────────────────────────
 // TODO: actualizar con tiempos reales de logística
 const tiempos = [
@@ -143,7 +188,10 @@ const proximamente = [
   { nombre: 'Seguimiento de Pedido', icono: 'tracking' },
 ]
 
-onMounted(fetchVideos)
+onMounted(() => {
+  fetchVideos()
+  fetchServiciosImagenes()
+})
 
 // ── Modal cotización ───────────────────────────────────────────────────────
 const modalOpen = ref(false)
@@ -212,13 +260,26 @@ async function submitForm() {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
-          v-for="s in servicios"
+          v-for="s in serviciosConImagen"
           :key="s.id"
           class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-200"
         >
           <!-- Imagen / placeholder -->
-          <div :class="`relative h-44 bg-gradient-to-br ${s.iconColor} flex items-center justify-center`">
-            <div class="flex flex-col items-center gap-2 opacity-40">
+          <div
+            class="relative h-44 flex items-center justify-center overflow-hidden"
+            :class="s.imagen ? 'bg-gray-100' : `bg-gradient-to-br ${s.iconColor}`"
+          >
+            <!-- Imagen real del backend -->
+            <LazyImage
+              v-if="s.imagen"
+              :src="s.imagen.image_url"
+              :blur="s.imagen.blur_placeholder ?? undefined"
+              :alt="s.nombre"
+              class="absolute inset-0 w-full h-full"
+            />
+
+            <!-- Placeholder con ícono (mientras no hay imagen) -->
+            <div v-else class="flex flex-col items-center gap-2 opacity-40">
 
               <!-- Ícono envío -->
               <svg v-if="s.id === 'envio'" class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -458,7 +519,7 @@ async function submitForm() {
             </div>
             <div class="pt-2">
               <a
-                href="https://wa.me/524171601530?text=Hola%2C%20me%20gustar%C3%ADa%20consultar%20la%20disponibilidad%20de%20sus%20servicios%20en%20mi%20zona."
+                href="https://wa.me/524433396659?text=Hola%2C%20me%20gustar%C3%ADa%20consultar%20la%20disponibilidad%20de%20sus%20servicios%20en%20mi%20zona."
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center gap-2 text-sm font-heading font-semibold text-green-600 hover:text-green-700 transition-colors"

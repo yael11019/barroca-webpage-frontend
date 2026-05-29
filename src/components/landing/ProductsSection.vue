@@ -6,6 +6,7 @@ import { useAnalytics } from '@/composables/useAnalytics'
 import type { ProductoCatalogo, ColorCatalogo } from '@/types/producto'
 import { imageUrl } from '@/utils/imageUrl'
 import api from '@/services/api'
+import CatalogoDigitalButton from '@/components/landing/CatalogoDigitalButton.vue'
 import type { ImagenCatalogo } from '@/types/producto'
 
 // ── Leyendas de imágenes ──────────────────────────────────────────────────────
@@ -80,9 +81,27 @@ watch(
   { immediate: true },
 )
 
+// ── Orden de acomodo: sincronizadas → estándar → alto brillo → piso ───────────
+const ORDEN_SUBCATEGORIA = [
+  'LINEA SINCRONIZADA',
+  'LINEA ESTANDAR',
+  'ALTO BRILLO Y SUPER MATE',
+  'ANTI-HUELLA ALTO BRILLO Y SUPER MATE',
+  'PISO SPC',
+]
+
+function ordenProducto(p: ProductoCatalogo): number {
+  const key = (p.subcategoria ?? p.tipo ?? '').toUpperCase()
+  const idx = ORDEN_SUBCATEGORIA.findIndex(o => key.startsWith(o))
+  return idx === -1 ? ORDEN_SUBCATEGORIA.length : idx
+}
+
 // ── Productos filtrados por tab ───────────────────────────────────────────────
 const productosActivos = computed(() => {
-  const validos = store.productos.filter((p: ProductoCatalogo) => p.tipo && p.colores.length > 0)
+  const validos = store.productos
+    .filter((p: ProductoCatalogo) => p.tipo && p.colores.length > 0)
+    .slice()
+    .sort((a: ProductoCatalogo, b: ProductoCatalogo) => ordenProducto(a) - ordenProducto(b))
   if (activeTab.value === 'todos') return validos
   return validos.filter((p: ProductoCatalogo) => p.tipo?.toUpperCase().startsWith(activeTab.value))
 })
@@ -127,7 +146,7 @@ function setModalColor(idx: number) {
 }
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
-const WHATSAPP_NUMBER = '521XXXXXXXXXX'
+const WHATSAPP_NUMBER = '524433396659'
 
 function whatsappProducto(producto: ProductoCatalogo | null) {
   if (!producto) return
@@ -235,6 +254,11 @@ onMounted(() => {
         <!-- Estado vacío -->
         <div v-else class="text-center py-16">
           <p class="text-gray-400 font-heading">No hay productos disponibles en esta categoría.</p>
+        </div>
+
+        <!-- Botón Catálogo Digital -->
+        <div class="mt-16">
+          <CatalogoDigitalButton />
         </div>
 
         <!-- CTA WhatsApp general -->

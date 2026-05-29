@@ -47,16 +47,14 @@ function handleModalSubmit() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              <!-- TODO: Actualizar con número real -->
-              <a href="tel:+524616182020" class="hover:text-gold transition-colors">(461) 618-2020</a>
+              <a href="tel:+524171780247" class="hover:text-gold transition-colors">+52 417 178 0247</a>
             </li>
             <li class="flex items-start gap-2 text-gray-400 text-xs">
               <svg class="w-4 h-4 text-gold flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              <!-- TODO: Actualizar con correo real -->
-              <a href="mailto:contacto@barroca.com" class="hover:text-gold transition-colors">contacto@barroca.com</a>
+              <a href="mailto:marketingbarroca@gmail.com" class="hover:text-gold transition-colors">marketingbarroca@gmail.com</a>
             </li>
             <li class="flex items-start gap-2 text-gray-400 text-xs">
               <svg class="w-4 h-4 text-gold flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

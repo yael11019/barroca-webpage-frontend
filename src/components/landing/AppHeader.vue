@@ -13,7 +13,8 @@ const navLinks = [
   { label: 'Catálogo', section: 'catalogo' },
   { label: 'Sucursales / Distribuidores', section: 'sucursales-distribuidores' },
   { label: 'Servicios', section: 'servicios' },
-  { label: 'Proyectos / Comunidad', section: 'proyectos' },
+  // Oculto temporalmente del menú (el componente ProyectosSection sigue existiendo):
+  // { label: 'Proyectos / Comunidad', section: 'proyectos' },
   { label: 'Barroca Bot', section: 'barroca-bot' },
 ]
 
@@ -67,7 +68,7 @@ function goTo(section: string) {
           <img
             src="/img/barroca-logo-amarillo.jpeg"
             alt="Barroca"
-            class="h-10 md:h-14 w-auto"
+            class="h-16 md:h-20 w-auto"
           />
         </button>
 

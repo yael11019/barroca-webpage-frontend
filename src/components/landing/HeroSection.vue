@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useNavigation } from '@/composables/useNavigation'
 import { useConfigStore } from '@/stores/config'
+import CatalogoDigitalButton from '@/components/landing/CatalogoDigitalButton.vue'
 
 const { navigateTo } = useNavigation()
 const configStore = useConfigStore()
@@ -21,6 +22,7 @@ interface SlideDisplay {
   blur_placeholder: string
   order: number
   link_url: string | null
+  vista?: string | null
   gradiente?: string
   titulo?: string
   subtitulo?: string
@@ -29,6 +31,24 @@ interface SlideDisplay {
 function slideDesktopUrl(s: SlideDisplay) { return s.desktop_url ?? s.image_url ?? '' }
 function slideMobileUrl(s: SlideDisplay) { return s.mobile_url ?? s.desktop_url ?? s.image_url ?? '' }
 function slideHasImage(s: SlideDisplay) { return !!(s.desktop_url ?? s.image_url) }
+
+// ── Navegación al hacer click en un slide ─────────────────────────────────────
+// El backend manda `vista` (ej. "distribuidores", "catalogo"). Lo mapeamos a la
+// sección interna correspondiente.
+const VISTA_A_SECCION: Record<string, string> = {
+  distribuidores: 'distribuidores',
+  catalogo: 'catalogo',
+}
+
+function slideEsClickeable(s: SlideDisplay) { return !!s.vista || !!s.link_url }
+
+function onSlideClick(s: SlideDisplay) {
+  if (s.vista) {
+    navigateTo(VISTA_A_SECCION[s.vista] ?? s.vista)
+  } else if (s.link_url) {
+    window.open(s.link_url, '_blank', 'noopener')
+  }
+}
 
 // Placeholders locales mientras el backend no tiene imágenes subidas
 const placeholderSlides: SlideDisplay[] = [
@@ -133,7 +153,7 @@ function irACatalogo(filtro?: string) {
 <template>
   <div>
     <!-- ── Hero Banner ──────────────────────────────────────────────────────── -->
-    <section class="relative min-h-[50vh] flex items-center justify-center bg-gold overflow-hidden">
+    <section class="relative min-h-[70vh] flex items-center justify-center bg-gold overflow-hidden">
 
       <!-- Imagen real del backend detrás del contenido (desktop/mobile) -->
       <LazyImage
@@ -199,14 +219,18 @@ function irACatalogo(filtro?: string) {
 
     <!-- ── Carrusel de Fotos ─────────────────────────────────────────────────── -->
     <section class="relative bg-charcoal overflow-hidden">
-      <div class="relative h-72 md:h-[480px]">
+      <div class="relative h-[30vh] min-h-[240px] md:h-auto md:min-h-0 md:aspect-[3/1]">
 
         <!-- Slides -->
         <div
           v-for="(slide, i) in slides"
           :key="slide.id"
           class="absolute inset-0 transition-opacity duration-700"
-          :class="i === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+          :class="[
+            i === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none',
+            slideEsClickeable(slide) ? 'cursor-pointer' : '',
+          ]"
+          @click="onSlideClick(slide)"
         >
           <!-- Imagen del backend: solo se renderiza cuando el slide ha sido alcanzado -->
           <LazyImage
@@ -270,6 +294,13 @@ function irACatalogo(filtro?: string) {
             :aria-label="`Ir a slide ${i + 1}`"
           />
         </div>
+      </div>
+    </section>
+
+    <!-- ── Botón Catálogo Digital ───────────────────────────────────────────── -->
+    <section class="bg-white pt-12 md:pt-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <CatalogoDigitalButton />
       </div>
     </section>
 
@@ -360,8 +391,16 @@ function irACatalogo(filtro?: string) {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
-          <!-- TODO: Reemplazar con imagen real de Barroca -->
-          <div class="relative rounded-xl overflow-hidden aspect-video bg-verde-light flex items-center justify-center shadow-xl">
+          <!-- Imagen del backend (por_que_elegir_barroca) -->
+          <LazyImage
+            v-if="configStore.porQueBarroca"
+            :src="configStore.porQueBarroca.url"
+            :blur="configStore.porQueBarroca.blur"
+            alt="¿Por qué elegir Barroca?"
+            class="rounded-xl overflow-hidden aspect-video shadow-xl w-full"
+          />
+          <!-- Sin imagen: placeholder -->
+          <div v-else class="relative rounded-xl overflow-hidden aspect-video bg-verde-light flex items-center justify-center shadow-xl">
             <div class="text-center text-white/30 px-6">
               <svg class="w-20 h-20 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"

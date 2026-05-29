@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/services/api'
-import type { CarouselSlide, CatalogoMedia, DistribucionMedia } from '@/types/siteSettings'
+import type { CarouselSlide, CatalogoMedia, DistribucionMedia, SimpleMedia } from '@/types/siteSettings'
 
 export const useConfigStore = defineStore('config', () => {
   // Hero desktop
@@ -14,6 +14,7 @@ export const useConfigStore = defineStore('config', () => {
   const carousel = ref<CarouselSlide[]>([])
   const catalogos = ref<Record<string, CatalogoMedia>>({})
   const distribucion = ref<DistribucionMedia[]>([])
+  const porQueBarroca = ref<SimpleMedia | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const fetched = ref(false)
@@ -41,6 +42,7 @@ export const useConfigStore = defineStore('config', () => {
       carousel.value = data.carousel ?? []
       catalogos.value = data.catalogos ?? {}
       distribucion.value = (data.distribucion ?? []).filter((d: DistribucionMedia) => d.is_active)
+      porQueBarroca.value = data.por_que_elegir_barroca ?? null
       fetched.value = true
     } catch (e) {
       error.value = 'No se pudieron cargar las configuraciones del sitio.'
@@ -58,6 +60,7 @@ export const useConfigStore = defineStore('config', () => {
     carousel,
     catalogos,
     distribucion,
+    porQueBarroca,
     loading,
     error,
     fetched,

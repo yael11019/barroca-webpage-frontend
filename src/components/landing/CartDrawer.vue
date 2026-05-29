@@ -141,7 +141,7 @@ function generarMensajeWhatsApp(): string {
 
         <!-- WhatsApp order button -->
         <a
-          :href="`https://wa.me/524171601530?text=${generarMensajeWhatsApp()}`"
+          :href="`https://wa.me/524433396659?text=${generarMensajeWhatsApp()}`"
           target="_blank"
           rel="noopener noreferrer"
           class="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-heading font-bold text-sm uppercase tracking-wider px-4 py-3 rounded transition-colors duration-200"

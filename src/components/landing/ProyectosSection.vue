@@ -717,7 +717,7 @@ const tipoBadgeColor: Record<Exclude<TipoProyecto, 'todos'>, string> = {
 
             <div class="mt-auto pt-4 border-t border-gray-100">
               <a
-                href="https://wa.me/524171601530?text=Hola%2C%20me%20interesa%20un%20proyecto%20similar%20al%20que%20vi%20en%20su%20sitio."
+                href="https://wa.me/524433396659?text=Hola%2C%20me%20interesa%20un%20proyecto%20similar%20al%20que%20vi%20en%20su%20sitio."
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex items-center justify-center gap-2 w-full bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold py-3 rounded-lg text-sm uppercase tracking-wider transition-colors"

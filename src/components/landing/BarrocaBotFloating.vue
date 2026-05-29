@@ -49,7 +49,7 @@ async function sendMessage(text?: string) {
   isBotTyping.value = true
   await scrollToBottom()
 
-  const fallback = 'Lo siento, no pude procesar tu pregunta. Contáctanos por **WhatsApp al +52 417 160 1530**. 😊'
+  const fallback = 'Lo siento, no pude procesar tu pregunta. Contáctanos por **WhatsApp al +52 443 339 6659**. 😊'
   let respuesta: string
   try {
     const { data } = await api.post('/api/public/chat', { pregunta: msg })

@@ -9,6 +9,8 @@ export interface CarouselSlide {
   blur_placeholder: string
   order: number
   link_url: string | null
+  // Vista interna a la que navega al hacer click (ej. "distribuidores", "catalogo")
+  vista?: string | null
 }
 
 export interface HeroMedia {
@@ -31,6 +33,11 @@ export interface DistribucionMedia {
   blur_placeholder?: string
   order: number
   is_active: boolean
+}
+
+export interface SimpleMedia {
+  url: string
+  blur?: string
 }
 
 export interface SiteMediaResponse {

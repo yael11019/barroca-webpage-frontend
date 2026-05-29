@@ -93,14 +93,96 @@ function resetMuestrario() {
   muestrarioEnviado.value = false
 }
 
+// ── Distribuidores: datos del backend ──────────────────────────────────────
+interface DistribuidorAPI {
+  nombre_dueno: string
+  nombre_comercio: string
+  domicilio: string
+  estado: string
+  telefono: string
+  correo: string
+  is_active: boolean
+}
+
+interface Distribuidor {
+  id: number
+  nombre: string         // nombre_comercio
+  dueno: string          // nombre_dueno
+  ciudad: string         // domicilio
+  estadoId: string | null // id del SVG (o null si el nombre no mapea)
+  estadoNombre: string
+  telefono: string
+  correo: string
+}
+
+// Normaliza: minúsculas, sin acentos, sin espacios extra
+function normalizar(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
+
+// nombre normalizado del estado → id del SVG (@svg-maps/mexico)
+const ESTADO_NOMBRE_A_ID: Record<string, string> = (() => {
+  const map: Record<string, string> = {}
+  for (const l of Mexico.locations as { id: string; name: string }[]) {
+    map[normalizar(l.name)] = l.id
+  }
+  // Alias para nombres que el backend manda distinto al mapa
+  return {
+    ...map,
+    'ciudad de mexico': 'cmx',
+    'cdmx': 'cmx',
+    'distrito federal': 'cmx',
+    'df': 'cmx',
+    'estado de mexico': 'mex',
+    'edomex': 'mex',
+    'michoacan de ocampo': 'mic',
+    'coahuila de zaragoza': 'coa',
+    'veracruz de ignacio de la llave': 'ver',
+    'nuevo leon': 'nle',
+  }
+})()
+
+function estadoNombreAId(nombre: string): string | null {
+  return ESTADO_NOMBRE_A_ID[normalizar(nombre)] ?? null
+}
+
+const distribuidores = ref<Distribuidor[]>([])
+const distribuidoresLoading = ref(false)
+
+async function fetchDistribuidores() {
+  distribuidoresLoading.value = true
+  try {
+    const { data } = await api.get('/api/public/distribuidores')
+    distribuidores.value = (data.data ?? [])
+      .filter((d: DistribuidorAPI) => d.is_active)
+      .map((d: DistribuidorAPI, i: number): Distribuidor => ({
+        id: i + 1,
+        nombre: d.nombre_comercio,
+        dueno: d.nombre_dueno,
+        ciudad: d.domicilio,
+        estadoId: estadoNombreAId(d.estado),
+        estadoNombre: d.estado,
+        telefono: d.telefono,
+        correo: d.correo,
+      }))
+  } catch {
+    distribuidores.value = []
+  } finally {
+    distribuidoresLoading.value = false
+  }
+}
+
 // ── Distribuidores: mapa + estado ──────────────────────────────────────────
-const estadosConCobertura = ['cmx', 'mex', 'pue', 'mor', 'hid', 'que', 'gua', 'tla']
+// La cobertura se deriva de los estados que realmente tienen distribuidores
+const estadosConCobertura = computed(() => [
+  ...new Set(distribuidores.value.map(d => d.estadoId).filter((id): id is string => !!id)),
+])
 const estadoSeleccionado = ref<string | null>(null)
 const estadoSinCoberturaSeleccionado = ref<string | null>(null)
 const hoveredState = ref<string | null>(null)
 
 function toggleEstado(id: string) {
-  if (estadosConCobertura.includes(id)) {
+  if (estadosConCobertura.value.includes(id)) {
     estadoSinCoberturaSeleccionado.value = null
     estadoSeleccionado.value = estadoSeleccionado.value === id ? null : id
   } else {
@@ -112,7 +194,7 @@ function toggleEstado(id: string) {
 function fillEstado(id: string): string {
   if (estadoSeleccionado.value === id) return '#E6BD1F'
   if (estadoSinCoberturaSeleccionado.value === id) return '#B0B4BB'
-  if (estadosConCobertura.includes(id)) return '#FFD225'
+  if (estadosConCobertura.value.includes(id)) return '#FFD225'
   if (hoveredState.value === id) return '#C0C4CB'
   return '#D1D5DB'
 }
@@ -157,25 +239,18 @@ function doPan(e: MouseEvent | TouchEvent) {
 }
 function endPan() { isPanning.value = false }
 
-// ── Distribuidores: datos ──────────────────────────────────────────────────
-const distribuidores = [
-  { id: 1,  nombre: 'Mármoles del Centro',    estadoId: 'cmx', ciudad: 'Benito Juárez, CDMX',      telefono: '+52 55 1234 5678', correo: 'marmoles.centro@ejemplo.com' },
-  { id: 2,  nombre: 'Piedra & Estilo',         estadoId: 'cmx', ciudad: 'Miguel Hidalgo, CDMX',     telefono: '+52 55 8765 4321', correo: 'piedraestilo@ejemplo.com' },
-  { id: 3,  nombre: 'Cantera Toluca',          estadoId: 'mex', ciudad: 'Toluca',                   telefono: '+52 72 2345 6789', correo: 'cantera.toluca@ejemplo.com' },
-  { id: 4,  nombre: 'Ecatepec Materiales',     estadoId: 'mex', ciudad: 'Ecatepec',                 telefono: '+52 55 3456 7890', correo: 'ecatepec.mat@ejemplo.com' },
-  { id: 5,  nombre: 'Revestimientos Poblanos', estadoId: 'pue', ciudad: 'Puebla de Zaragoza',       telefono: '+52 22 4567 8901', correo: 'rev.poblanos@ejemplo.com' },
-  { id: 6,  nombre: 'Bajío Piedra Natural',    estadoId: 'gua', ciudad: 'León, Guanajuato',         telefono: '+52 47 5678 9012', correo: 'bajio.piedra@ejemplo.com' },
-  { id: 7,  nombre: 'Querétaro Mármol',        estadoId: 'que', ciudad: 'Santiago de Querétaro',    telefono: '+52 44 6789 0123', correo: 'qro.marmol@ejemplo.com' },
-  { id: 8,  nombre: 'Sur de Morelos',          estadoId: 'mor', ciudad: 'Cuernavaca',               telefono: '+52 77 7890 1234', correo: 'surmorelos@ejemplo.com' },
-  { id: 9,  nombre: 'Hidalgo Canteras',        estadoId: 'hid', ciudad: 'Pachuca',                  telefono: '+52 77 8901 2345', correo: 'hidalgo.cant@ejemplo.com' },
-  { id: 10, nombre: 'Tlaxcala Materiales',     estadoId: 'tla', ciudad: 'Tlaxcala de Xicohténcatl', telefono: '+52 24 9012 3456', correo: 'tlax.mat@ejemplo.com' },
-]
-
+// ── Distribuidores: filtrado por estado ────────────────────────────────────
 const distribuidoresFiltrados = computed(() =>
   estadoSeleccionado.value
-    ? distribuidores.filter(d => d.estadoId === estadoSeleccionado.value)
-    : distribuidores,
+    ? distribuidores.value.filter(d => d.estadoId === estadoSeleccionado.value)
+    : distribuidores.value,
 )
+
+// URL de búsqueda en Google Maps a partir de la dirección + estado
+function distribuidorMapsUrl(dist: Distribuidor): string {
+  const query = encodeURIComponent([dist.ciudad, dist.estadoNombre].filter(Boolean).join(', '))
+  return `https://www.google.com/maps/search/?api=1&query=${query}`
+}
 
 const nombreEstado = computed(() => {
   if (!estadoSeleccionado.value) return 'Todos los estados'
@@ -229,6 +304,7 @@ function abrirModalPrimerDistrib() { modalEsPrimerDistrib.value = true; modalOpe
 
 onMounted(() => {
   store.fetchAlmacenes()
+  fetchDistribuidores()
 })
 </script>
 
@@ -289,16 +365,21 @@ onMounted(() => {
         <!-- Layout: imagen izquierda + info derecha -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-6xl mx-auto mb-16">
 
-          <!-- Imagen de la sucursal -->
-          <!-- TODO: conectar con imagen real de la sucursal desde el backend -->
-          <div class="rounded-xl overflow-hidden bg-gray-100 min-h-[360px] flex items-center justify-center shadow-md">
+          <!-- Imagen de la sucursal (del backend) -->
+          <LazyImage
+            v-if="store.selected.imagen_url"
+            :src="store.selected.imagen_url"
+            :alt="store.selected.nombre"
+            class="rounded-xl overflow-hidden shadow-md w-full h-full min-h-[360px]"
+          />
+          <!-- Sin imagen: placeholder -->
+          <div v-else class="rounded-xl overflow-hidden bg-gray-100 min-h-[360px] flex items-center justify-center shadow-md">
             <div class="text-center text-gray-300 px-6">
               <svg class="w-20 h-20 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                   d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               <p class="font-heading text-sm">Foto de la sucursal</p>
-              <p class="text-xs mt-1 text-gray-200">TODO: imagen del backend</p>
             </div>
           </div>
 
@@ -640,8 +721,14 @@ onMounted(() => {
                 </button>
               </div>
 
+              <!-- Cargando distribuidores -->
+              <div v-if="distribuidoresLoading" class="py-8 text-center">
+                <div class="inline-block w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-gray-400 text-xs mt-3">Cargando distribuidores...</p>
+              </div>
+
               <!-- Estado sin cobertura -->
-              <div v-if="estadoSinCoberturaSeleccionado" class="py-8 text-center">
+              <div v-else-if="estadoSinCoberturaSeleccionado" class="py-8 text-center">
                 <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -673,7 +760,21 @@ onMounted(() => {
                   class="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:border-gold/50 transition-colors"
                 >
                   <p class="font-heading font-bold text-charcoal text-sm mb-0.5">{{ dist.nombre }}</p>
-                  <p class="text-gray-400 text-xs mb-2">{{ dist.ciudad }}</p>
+                  <p v-if="dist.dueno" class="text-gray-500 text-xs">{{ dist.dueno }}</p>
+                  <a
+                    :href="distribuidorMapsUrl(dist)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="group/addr flex items-start gap-1.5 text-gray-400 hover:text-gold text-xs mb-2 transition-colors"
+                    @click="trackDirectionsClick(dist.nombre)"
+                  >
+                    <svg class="w-3.5 h-3.5 flex-shrink-0 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="underline-offset-2 group-hover/addr:underline">{{ dist.ciudad }}</span>
+                  </a>
                   <div class="space-y-1">
                     <a :href="`tel:${dist.telefono}`" class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gold transition-colors">
                       <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
