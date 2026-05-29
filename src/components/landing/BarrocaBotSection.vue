@@ -346,24 +346,11 @@ function loadFile(file: File) {
 }
 
 // ── Visualización ─────────────────────────────────────────────────────────
-// TODO: poner en false cuando el backend soporte modo combinado.
-// Mientras tanto, el modo combinar simula el render para poder probar el flujo.
-const MOCK_COMBINADO = true
-
 async function runVisualization() {
   if (!uploadedFile.value || !puedeAvanzar.value) return
   isProcessing.value = true
   processingError.value = null
   resultImage.value = null
-
-  // Mock temporal del modo combinado (endpoint en construcción)
-  if (showroomModo.value === 'combinar' && MOCK_COMBINADO) {
-    await new Promise(r => setTimeout(r, 1500))
-    resultImage.value = uploadedPhoto.value
-    showroomStep.value = 'result'
-    isProcessing.value = false
-    return
-  }
 
   try {
     const formData = new FormData()
