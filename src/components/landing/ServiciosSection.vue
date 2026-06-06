@@ -157,7 +157,7 @@ const tiempos = [
   {
     zona: 'Zona Centro',
     detalle: 'Puebla, Morelos, Hidalgo, Querétaro, Guanajuato, Tlaxcala',
-    tiempo: '2 – 3 días hábiles',
+    tiempo: '1 - 2 días hábiles',
     icono: 'normal',
   },
   {
