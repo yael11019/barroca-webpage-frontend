@@ -133,11 +133,11 @@ const razones = [
   },
   {
     titulo: 'Amplia Variedad',
-    descripcion: 'Más de 200 opciones en colores, texturas y acabados para cada proyecto.',
+    descripcion: 'Más de 35 opciones en colores, texturas y acabados para cada proyecto.',
   },
   {
     titulo: 'Asesoría Experta',
-    descripcion: 'Nuestro equipo de especialistas te guía en cada etapa de tu proyecto.',
+    descripcion: 'Nuestro equipo de especialistas guía en la elección de tu material.',
   },
   {
     titulo: 'Distribución Confiable',

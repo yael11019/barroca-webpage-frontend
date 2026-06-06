@@ -27,7 +27,7 @@ const timeline = [
     descripcion: 'Después de más de tres décadas de experiencia en el sector maderero, surge BARROCA: una iniciativa impulsada por la nueva generación.',
   },
   {
-    año: '2025',
+    año: '2026',
     titulo: 'Hoy',
     descripcion: 'Más de 30 años de experiencia respaldan a Barroca como referente en melaminas de diseño, calidad y precio justo.',
   },

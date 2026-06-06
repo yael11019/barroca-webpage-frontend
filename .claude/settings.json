@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const m=require\\('/Users/yaelhurtado/Documents/barroca-webpage-frontend/node_modules/@svg-maps/mexico'\\); console.log\\(m.locations.filter\\(l=>/quer|guana/i.test\\(l.name\\)\\).map\\(l=>l.id+' = '+l.name\\)\\)\")",
+      "Bash(grep -iE \"#[0-9a-f]{3,6}\")"
+    ]
+  }
+}

@@ -59,7 +59,7 @@ async function openFichas(producto: ProductoCatalogo) {
 }
 
 const store = useProductosStore()
-const { catalogFilter, navigateTo } = useNavigation()
+const { catalogFilter, botTab, navigateTo } = useNavigation()
 const { trackCategoryFilter, trackWhatsAppClick } = useAnalytics()
 
 // ── Tabs fijos ────────────────────────────────────────────────────────────────
@@ -410,7 +410,7 @@ onMounted(() => {
             <!-- Botón Barroca Bot para imágenes IA -->
             <button
               v-if="modalColor?.imagenes[modalImageIdx]?.legend === 'ai_render'"
-              @click="navigateTo('barroca-bot'); closeModal()"
+              @click="botTab = 'showroom'; navigateTo('barroca-bot'); closeModal()"
               class="w-full flex items-center justify-center gap-2 bg-verde hover:bg-verde-light text-white font-heading font-semibold text-sm px-5 py-3 rounded-xl transition-colors duration-200"
             >
               <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

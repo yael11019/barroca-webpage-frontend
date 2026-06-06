@@ -11,7 +11,7 @@ import api from '@/services/api'
 const store = useAlmacenesStore()
 const citas = useCitasStore()
 const configStore = useConfigStore()
-const { trackPhoneClick, trackEmailClick, trackDirectionsClick, trackSucursalSwitch } = useAnalytics()
+const { trackPhoneClick, trackEmailClick, trackDirectionsClick, trackSucursalSwitch, trackWhatsAppClick } = useAnalytics()
 
 const almacenesActivos = computed(() => store.almacenes.filter((a) => a.activo))
 
@@ -177,30 +177,44 @@ async function fetchDistribuidores() {
 const estadosConCobertura = computed(() => [
   ...new Set(distribuidores.value.map(d => d.estadoId).filter((id): id is string => !!id)),
 ])
+
+// Estados sin distribuidor físico pero a los que sí hacemos envíos.
+// Salen resaltados en el mapa y, al seleccionarlos, muestran un mensaje de envíos.
+const ZONAS_ENVIO_IDS = ['que', 'gua'] // Querétaro, Guanajuato
+
 const estadoSeleccionado = ref<string | null>(null)
+const estadoEnvioSeleccionado = ref<string | null>(null)
 const estadoSinCoberturaSeleccionado = ref<string | null>(null)
 const hoveredState = ref<string | null>(null)
 
 function toggleEstado(id: string) {
   if (estadosConCobertura.value.includes(id)) {
+    estadoEnvioSeleccionado.value = null
     estadoSinCoberturaSeleccionado.value = null
     estadoSeleccionado.value = estadoSeleccionado.value === id ? null : id
+  } else if (ZONAS_ENVIO_IDS.includes(id)) {
+    estadoSeleccionado.value = null
+    estadoSinCoberturaSeleccionado.value = null
+    estadoEnvioSeleccionado.value = estadoEnvioSeleccionado.value === id ? null : id
   } else {
     estadoSeleccionado.value = null
+    estadoEnvioSeleccionado.value = null
     estadoSinCoberturaSeleccionado.value = estadoSinCoberturaSeleccionado.value === id ? null : id
   }
 }
 
 function fillEstado(id: string): string {
   if (estadoSeleccionado.value === id) return '#E6BD1F'
+  if (estadoEnvioSeleccionado.value === id) return '#0c221f'
   if (estadoSinCoberturaSeleccionado.value === id) return '#B0B4BB'
   if (estadosConCobertura.value.includes(id)) return '#FFD225'
+  if (ZONAS_ENVIO_IDS.includes(id)) return '#153830'
   if (hoveredState.value === id) return '#C0C4CB'
   return '#D1D5DB'
 }
 
 const badgeName = computed(() => {
-  const id = hoveredState.value ?? estadoSeleccionado.value
+  const id = hoveredState.value ?? estadoSeleccionado.value ?? estadoEnvioSeleccionado.value
   if (!id) return null
   return Mexico.locations.find((l: { id: string; name: string }) => l.id === id)?.name ?? null
 })
@@ -260,6 +274,18 @@ const nombreEstado = computed(() => {
 const nombreEstadoSinCobertura = computed(() => {
   if (!estadoSinCoberturaSeleccionado.value) return ''
   return Mexico.locations.find((l: { id: string; name: string }) => l.id === estadoSinCoberturaSeleccionado.value)?.name ?? estadoSinCoberturaSeleccionado.value
+})
+
+const nombreEstadoEnvio = computed(() => {
+  if (!estadoEnvioSeleccionado.value) return ''
+  return Mexico.locations.find((l: { id: string; name: string }) => l.id === estadoEnvioSeleccionado.value)?.name ?? estadoEnvioSeleccionado.value
+})
+
+// Enlace de WhatsApp para cotizar envíos a la zona seleccionada
+const whatsappEnvioUrl = computed(() => {
+  const zona = nombreEstadoEnvio.value
+  const texto = `Hola, me interesa información sobre envíos de Barroca${zona ? ` a ${zona}` : ''}.`
+  return `https://wa.me/524433396659?text=${encodeURIComponent(texto)}`
 })
 
 // ── Modal: Solicitud de distribuidor ───────────────────────────────────────
@@ -710,11 +736,11 @@ onMounted(() => {
             <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
               <div class="flex items-center justify-between mb-4">
                 <h4 class="font-heading font-bold text-charcoal text-sm uppercase tracking-wider leading-tight">
-                  {{ estadoSinCoberturaSeleccionado ? nombreEstadoSinCobertura : nombreEstado }}
+                  {{ estadoEnvioSeleccionado ? nombreEstadoEnvio : estadoSinCoberturaSeleccionado ? nombreEstadoSinCobertura : nombreEstado }}
                 </h4>
                 <button
-                  v-if="estadoSeleccionado || estadoSinCoberturaSeleccionado"
-                  @click="estadoSeleccionado = null; estadoSinCoberturaSeleccionado = null"
+                  v-if="estadoSeleccionado || estadoEnvioSeleccionado || estadoSinCoberturaSeleccionado"
+                  @click="estadoSeleccionado = null; estadoEnvioSeleccionado = null; estadoSinCoberturaSeleccionado = null"
                   class="text-xs text-gold hover:text-gold-dark font-semibold transition-colors whitespace-nowrap ml-2"
                 >
                   Ver todos
@@ -725,6 +751,34 @@ onMounted(() => {
               <div v-if="distribuidoresLoading" class="py-8 text-center">
                 <div class="inline-block w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
                 <p class="text-gray-400 text-xs mt-3">Cargando distribuidores...</p>
+              </div>
+
+              <!-- Zona con envíos (sin distribuidor físico) -->
+              <div v-else-if="estadoEnvioSeleccionado" class="py-8 text-center">
+                <div class="w-12 h-12 bg-verde/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg class="w-6 h-6 text-verde" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8h4l3 3v5a1 1 0 01-1 1h-1m-4 0H9"/>
+                  </svg>
+                </div>
+                <p class="font-heading font-bold text-charcoal text-sm mb-1">Hacemos envíos a {{ nombreEstadoEnvio }}</p>
+                <p class="text-gray-500 text-xs mb-5">
+                  Aún no tenemos un distribuidor físico en esta zona, pero contamos con envíos directos. Contáctanos para cotizar tu pedido.
+                </p>
+                <a
+                  :href="whatsappEnvioUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click="trackWhatsAppClick(`Envíos ${nombreEstadoEnvio}`)"
+                  class="inline-flex items-center gap-2 bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold px-4 py-2 rounded-lg transition-colors text-xs uppercase tracking-wider"
+                >
+                  <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.477zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                  </svg>
+                  Solicitar información
+                </a>
               </div>
 
               <!-- Estado sin cobertura -->
@@ -852,10 +906,14 @@ onMounted(() => {
             </div>
 
             <!-- Leyenda -->
-            <div class="flex items-center gap-5 mb-3 px-1 text-xs">
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mb-3 px-1 text-xs">
               <span class="flex items-center gap-1.5">
                 <span class="w-3.5 h-3.5 rounded-sm bg-gold inline-block"></span>
-                <span class="text-gray-500">Con cobertura</span>
+                <span class="text-gray-500">Con distribuidor</span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-3.5 h-3.5 rounded-sm bg-verde inline-block"></span>
+                <span class="text-gray-500">Con envíos</span>
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="w-3.5 h-3.5 rounded-sm bg-gray-300 inline-block"></span>

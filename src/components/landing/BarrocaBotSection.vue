@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useProductosStore } from '@/stores/productos'
+import { useNavigation } from '@/composables/useNavigation'
 import type { ProductoCatalogo, ColorCatalogo } from '@/types/producto'
 import { imageUrl } from '@/utils/imageUrl'
 import api from '@/services/api'
@@ -16,7 +17,11 @@ interface Mensaje {
 type ShowroomStep = 'material' | 'upload' | 'result'
 
 // ── Mobile tabs ────────────────────────────────────────────────────────────
-const activeTab = ref<'chat' | 'showroom'>('chat')
+// La pestaña inicial se sincroniza con la navegación (p. ej. el botón
+// "Ve cómo se vería tu espacio" abre directo el Showroom).
+const { botTab } = useNavigation()
+const activeTab = ref<'chat' | 'showroom'>(botTab.value)
+watch(botTab, (tab) => { activeTab.value = tab })
 
 // ── Productos store ────────────────────────────────────────────────────────
 const productosStore = useProductosStore()
@@ -51,7 +56,7 @@ const faqs = [
   // ── Servicios generales ────────────────────────────────────────────────────
   {
     keywords: ['servicios', 'que ofrece', 'qué ofrece', 'que hacen', 'qué hacen', 'que tienen', 'qué tienen', 'que venden', 'qué venden'],
-    respuesta: 'En **Barroca** ofrecemos:\n\n• **Melaminas** — más de 200 referencias en colores, vetas y texturas\n• **Pisos SPC y Vinílicos** — alta durabilidad y diseño\n• **Corte a medida** — con despiece incluido\n• **Enchapado de cubrecantos** — acabado perfecto para tus tableros\n• **Afilado de discos** — disponible para todos\n• **Envío a domicilio** — en compras realizadas con nosotros\n\n¿Sobre cuál te gustaría saber más? 😊',
+    respuesta: 'En **Barroca** ofrecemos:\n\n• **Melaminas** — más de 35 referencias en colores, vetas y texturas\n• **Pisos SPC y Vinílicos** — alta durabilidad y diseño\n• **Corte a medida** — con despiece incluido\n• **Enchapado de cubrecantos** — acabado perfecto para tus tableros\n• **Afilado de discos** — disponible para todos\n• **Envío a domicilio** — en compras realizadas con nosotros\n\n¿Sobre cuál te gustaría saber más? 😊',
   },
 
   // ── Ubicación ──────────────────────────────────────────────────────────────
@@ -147,7 +152,7 @@ const faqs = [
   // ── Envíos ─────────────────────────────────────────────────────────────────
   {
     keywords: ['envio', 'envío', 'domicilio', 'entregan', 'llevan', 'reparto', 'mandan', 'envian', 'envían', 'flete'],
-    respuesta: 'Sí hacemos **envíos a domicilio**, disponible exclusivamente en compras realizadas con nosotros.\n\nTiempos de entrega aproximados:\n• **Local**: 1-2 días hábiles\n• **Zona Centro**: 2-3 días hábiles\n• **Foráneo**: 4-6 días hábiles\n\nConsulta disponibilidad de envío a tu zona por **WhatsApp al +52 443 339 6659**. 🚚',
+    respuesta: 'Sí hacemos **envíos a domicilio**, disponible exclusivamente en compras realizadas con nosotros.\n\nTiempos de entrega aproximados:\n• **Local**: 1-2 días hábiles\n• **Zona Centro**: 1-2 días hábiles\n• **Foráneo**: 4-6 días hábiles\n\nConsulta disponibilidad de envío a tu zona por **WhatsApp al +52 443 339 6659**. 🚚',
   },
 
   // ── Garantía ───────────────────────────────────────────────────────────────
