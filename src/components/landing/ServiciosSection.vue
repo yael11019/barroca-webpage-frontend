@@ -104,7 +104,7 @@ const servicios = [
   },
   {
     id: 'afilado',
-    nombre: 'Afilado de Discos',
+    nombre: 'Centro de afilado',
     descripcion: 'Servicio de afilado profesional de discos de corte. Disponible para todos a través de nuestro aliado Afilados del Bajío.',
     tipo: 'estandar',
     etiqueta: 'Servicio para todos',

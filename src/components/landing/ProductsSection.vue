@@ -228,14 +228,14 @@ onMounted(() => {
             @click="openModal(producto, idx)"
             class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 text-left"
           >
-            <div class="aspect-square bg-gray-100 overflow-hidden">
+            <div class="relative aspect-square bg-gray-100 overflow-hidden">
               <LazyImage
                 v-if="color.imagenes.length"
                 :src="imageUrl(color.imagenes[0]?.url ?? '')"
                 :blur="color.imagenes[0]?.blur"
                 :alt="`${producto.nombre} — ${color.nombre}`"
-                class="w-full h-full"
-                img-class="group-hover:scale-105"
+                class="absolute inset-0 w-full h-full"
+                img-class="object-cover group-hover:scale-105"
               />
               <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -382,14 +382,15 @@ onMounted(() => {
           <div class="p-6 space-y-5">
 
             <!-- Imagen principal -->
-            <div class="rounded-xl overflow-hidden aspect-square bg-gray-100">
+            <div class="relative rounded-xl overflow-hidden aspect-square bg-gray-100">
               <LazyImage
                 v-if="modalColor?.imagenes.length"
                 :src="imageUrl(modalColor.imagenes[modalImageIdx]?.url ?? '')"
                 :blur="modalColor.imagenes[modalImageIdx]?.blur"
                 :alt="`${selectedProducto.nombre} — ${modalColor.nombre}`"
                 loading="eager"
-                class="w-full h-full"
+                class="absolute inset-0 w-full h-full"
+                img-class="object-cover"
               />
               <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
                 <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
