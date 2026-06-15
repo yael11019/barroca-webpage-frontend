@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch, reactive } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useProductosStore } from '@/stores/productos'
 import { useNavigation } from '@/composables/useNavigation'
 import { useAnalytics } from '@/composables/useAnalytics'
@@ -19,43 +19,84 @@ function getLeyenda(img: ImagenCatalogo | undefined): string | null {
   return img?.legend ? (LEYENDAS[img.legend] ?? null) : null
 }
 
-// ── Fichas Técnicas ───────────────────────────────────────────────────────────
-interface FichaTecnica {
+// ── Documentos (catálogos y fichas técnicas) ──────────────────────────────────
+// Endpoint público: GET /api/public/documentos?categoria&tipo&linea
+type DocTipo = 'catalogo' | 'ficha_tecnica'
+
+interface Documento {
   id: number
   titulo: string
-  descripcion?: string
   categoria: string
+  tipo: DocTipo
+  linea: string | null
+  file_name: string
   download_url: string
+  is_active: boolean
   order: number
 }
 
-const fichasOpen = ref(false)
-const fichasCategoria = ref('')
-const fichasData = ref<FichaTecnica[]>([])
-const fichasLoading = ref(false)
-const fichasCache = reactive<Record<string, FichaTecnica[]>>({})
+const TIPO_LABEL: Record<DocTipo, string> = {
+  catalogo: 'Catálogo',
+  ficha_tecnica: 'Fichas Técnicas',
+}
 
-async function openFichas(producto: ProductoCatalogo) {
-  const cat = (producto.tipo ?? 'general').toLowerCase().replace(/\s+/g, '_')
-  fichasCategoria.value = producto.tipo ?? ''
-  fichasOpen.value = true
+// Mapea el producto del catálogo a los params del endpoint
+function categoriaDoc(p: ProductoCatalogo): string | null {
+  const t = (p.tipo ?? '').toUpperCase()
+  if (t.startsWith('MELAMINA')) return 'melamina'
+  if (t.startsWith('PISO')) return 'piso_spc'
+  return null
+}
 
-  if (fichasCache[cat]) {
-    fichasData.value = fichasCache[cat]
-    return
-  }
+function lineaDoc(p: ProductoCatalogo): string | null {
+  const key = (p.subcategoria ?? '').toUpperCase()
+  if (key.startsWith('LINEA SINCRONIZADA')) return 'sincronizado'
+  if (key.startsWith('LINEA ESTANDAR')) return 'estandar'
+  if (key.startsWith('ANTI-HUELLA')) return 'antihuella'
+  if (key.startsWith('ALTO BRILLO')) return 'alto_brillo_y_super_mate'
+  return null
+}
 
-  fichasLoading.value = true
-  fichasData.value = []
+// Todos los documentos se cargan una vez para saber qué botones mostrar
+const documentos = ref<Documento[]>([])
+
+async function fetchDocumentos() {
   try {
-    const { data } = await api.get('/api/public/fichas-tecnicas', { params: { categoria: cat } })
-    fichasCache[cat] = data.data ?? []
-    fichasData.value = fichasCache[cat] ?? []
+    const { data } = await api.get('/api/public/documentos')
+    documentos.value = data.data ?? []
   } catch {
-    fichasData.value = []
-  } finally {
-    fichasLoading.value = false
+    documentos.value = []
   }
+}
+
+// Documentos disponibles para un producto y tipo (catálogo o ficha técnica)
+function documentosDe(producto: ProductoCatalogo, tipo: DocTipo): Documento[] {
+  const categoria = categoriaDoc(producto)
+  const linea = lineaDoc(producto)
+  return documentos.value
+    .filter(d =>
+      d.is_active &&
+      d.tipo === tipo &&
+      (!categoria || d.categoria === categoria) &&
+      (!linea || d.linea === linea || d.linea === null),
+    )
+    .sort((a, b) => a.order - b.order)
+}
+
+function tieneDocumentos(producto: ProductoCatalogo | null, tipo: DocTipo): boolean {
+  return !!producto && documentosDe(producto, tipo).length > 0
+}
+
+const docsOpen = ref(false)
+const docsTitulo = ref('')
+const docsSubtitulo = ref('')
+const docsData = ref<Documento[]>([])
+
+function openDocumentos(producto: ProductoCatalogo, tipo: DocTipo) {
+  docsTitulo.value = TIPO_LABEL[tipo]
+  docsSubtitulo.value = producto.subcategoria ?? producto.tipo ?? ''
+  docsData.value = documentosDe(producto, tipo)
+  docsOpen.value = true
 }
 
 const store = useProductosStore()
@@ -167,6 +208,7 @@ function whatsappGeneral() {
 
 onMounted(() => {
   store.fetchProductos()
+  fetchDocumentos()
 })
 </script>
 
@@ -278,24 +320,24 @@ onMounted(() => {
       </template>
     </div>
 
-    <!-- ── Modal Fichas Técnicas ──────────────────────────────────────────────── -->
+    <!-- ── Modal Documentos (catálogo / fichas técnicas) ──────────────────────── -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="fichasOpen" class="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm" @click="fichasOpen = false" />
+        <div v-if="docsOpen" class="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm" @click="docsOpen = false" />
       </Transition>
       <Transition name="modal-up">
         <div
-          v-if="fichasOpen"
+          v-if="docsOpen"
           class="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          @click.self="fichasOpen = false"
+          @click.self="docsOpen = false"
         >
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <div>
-                <h3 class="font-heading font-bold text-charcoal text-base">Fichas Técnicas</h3>
-                <p class="text-xs text-gray-400 mt-0.5 uppercase tracking-wider font-heading">{{ fichasCategoria }}</p>
+                <h3 class="font-heading font-bold text-charcoal text-base">{{ docsTitulo }}</h3>
+                <p class="text-xs text-gray-400 mt-0.5 uppercase tracking-wider font-heading">{{ docsSubtitulo }}</p>
               </div>
-              <button @click="fichasOpen = false" class="p-2 text-gray-400 hover:text-charcoal transition-colors">
+              <button @click="docsOpen = false" class="p-2 text-gray-400 hover:text-charcoal transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -303,27 +345,22 @@ onMounted(() => {
             </div>
 
             <div class="flex-1 overflow-y-auto px-6 py-4">
-              <!-- Cargando -->
-              <div v-if="fichasLoading" class="flex items-center justify-center py-12 gap-3 text-gray-400">
-                <div class="w-5 h-5 border-2 border-gold border-t-transparent rounded-full animate-spin"></div>
-                <span class="text-sm font-heading">Cargando fichas...</span>
-              </div>
-
-              <!-- Sin fichas -->
-              <div v-else-if="fichasData.length === 0" class="py-12 text-center">
+              <!-- Sin documentos -->
+              <div v-if="docsData.length === 0" class="py-12 text-center">
                 <svg class="w-10 h-10 mx-auto text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p class="text-gray-400 text-sm font-heading">No hay fichas disponibles aún.</p>
+                <p class="text-gray-400 text-sm font-heading">No hay documentos disponibles aún.</p>
               </div>
 
-              <!-- Lista de fichas -->
+              <!-- Lista de documentos -->
               <div v-else class="space-y-3">
                 <a
-                  v-for="ficha in fichasData"
-                  :key="ficha.id"
-                  :href="ficha.download_url"
+                  v-for="doc in docsData"
+                  :key="doc.id"
+                  :href="doc.download_url"
+                  :download="doc.file_name"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gold hover:bg-gold/5 transition-colors group"
@@ -334,8 +371,7 @@ onMounted(() => {
                     </svg>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-heading font-semibold text-charcoal text-sm leading-tight">{{ ficha.titulo }}</p>
-                    <p v-if="ficha.descripcion" class="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{{ ficha.descripcion }}</p>
+                    <p class="font-heading font-semibold text-charcoal text-sm leading-tight">{{ doc.titulo }}</p>
                     <p class="text-xs text-gray-400 mt-0.5 font-heading uppercase tracking-wider">PDF · Descargar</p>
                   </div>
                   <svg class="w-4 h-4 text-gray-300 group-hover:text-gold transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -473,7 +509,8 @@ onMounted(() => {
               </button>
 
               <button
-                @click="openFichas(selectedProducto)"
+                v-if="tieneDocumentos(selectedProducto, 'ficha_tecnica')"
+                @click="openDocumentos(selectedProducto, 'ficha_tecnica')"
                 class="flex-1 inline-flex items-center justify-center gap-2 border-2 border-charcoal text-charcoal hover:bg-charcoal hover:text-white font-heading font-bold uppercase tracking-wider px-4 py-3 rounded-full transition-colors"
               >
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -483,6 +520,19 @@ onMounted(() => {
                 Fichas Técnicas
               </button>
             </div>
+
+            <!-- Botón Catálogo PDF -->
+            <button
+              v-if="tieneDocumentos(selectedProducto, 'catalogo')"
+              @click="openDocumentos(selectedProducto, 'catalogo')"
+              class="w-full inline-flex items-center justify-center gap-2 bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold uppercase tracking-wider px-4 py-3 rounded-full transition-colors"
+            >
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z M12 11v6m0 0l-2.5-2.5M12 17l2.5-2.5"/>
+              </svg>
+              Catálogo PDF
+            </button>
 
           </div>
         </div>

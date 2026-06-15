@@ -61,13 +61,8 @@ const muestrarioEnviado = ref(false)
 const muestrarioLoading = ref(false)
 
 const opcionesMuestrario = [
-  'Melaminas — Línea Premium',
-  'Melaminas — Línea Clásica',
-  'Melaminas — Línea Maderas',
-  'Melaminas — Unicolores',
+  'Melaminas',
   'Pisos SPC',
-  'Vinil en Rollo',
-  'Madera Natural',
 ]
 
 async function enviarMuestrario() {
