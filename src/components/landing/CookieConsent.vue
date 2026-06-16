@@ -1,14 +1,27 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { addGtag } from 'vue-gtag'
+import { useRoute } from 'vue-router'
+import { useAnalytics } from '@/composables/useAnalytics'
 
 const STORAGE_KEY = 'cookie_consent'
 const visible = ref(false)
+const { trackScreenView } = useAnalytics()
+const route = useRoute()
+
+// Inicializa GA4 y registra la vista de la pantalla actual. Se llama una vez
+// que hay consentimiento, porque los eventos enviados antes de addGtag() se
+// descartan (GA arranca en modo manual) — incluido el page_view que dispara
+// router.afterEach al cargar la app.
+function iniciarAnalytics() {
+  addGtag()
+  trackScreenView((route.name as string | undefined) ?? route.path)
+}
 
 onMounted(() => {
   const consent = localStorage.getItem(STORAGE_KEY)
   if (consent === 'accepted') {
-    addGtag()
+    iniciarAnalytics()
   } else if (!consent) {
     visible.value = true
   }
@@ -17,7 +30,7 @@ onMounted(() => {
 function accept() {
   localStorage.setItem(STORAGE_KEY, 'accepted')
   visible.value = false
-  addGtag()
+  iniciarAnalytics()
 }
 
 function dismiss() {

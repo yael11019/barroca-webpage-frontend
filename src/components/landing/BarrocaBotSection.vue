@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useProductosStore } from '@/stores/productos'
-import { useNavigation } from '@/composables/useNavigation'
 import type { ProductoCatalogo, ColorCatalogo } from '@/types/producto'
 import { imageUrl } from '@/utils/imageUrl'
 import api from '@/services/api'
@@ -17,11 +17,16 @@ interface Mensaje {
 type ShowroomStep = 'material' | 'upload' | 'result'
 
 // ── Mobile tabs ────────────────────────────────────────────────────────────
-// La pestaña inicial se sincroniza con la navegación (p. ej. el botón
-// "Ve cómo se vería tu espacio" abre directo el Showroom).
-const { botTab } = useNavigation()
-const activeTab = ref<'chat' | 'showroom'>(botTab.value)
-watch(botTab, (tab) => { activeTab.value = tab })
+// La pestaña inicial se sincroniza con la query de la ruta (p. ej. el botón
+// "Ve cómo se vería tu espacio" abre /barroca-bot?tab=showroom).
+const route = useRoute()
+const activeTab = ref<'chat' | 'showroom'>(route.query.tab === 'showroom' ? 'showroom' : 'chat')
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab === 'showroom' || tab === 'chat') activeTab.value = tab
+  },
+)
 
 // ── Productos store ────────────────────────────────────────────────────────
 const productosStore = useProductosStore()
