@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useProductosStore } from '@/stores/productos'
-import { useNavigation } from '@/composables/useNavigation'
 import { useAnalytics } from '@/composables/useAnalytics'
 import type { ProductoCatalogo, ColorCatalogo } from '@/types/producto'
 import { imageUrl } from '@/utils/imageUrl'
@@ -100,7 +100,8 @@ function openDocumentos(producto: ProductoCatalogo, tipo: DocTipo) {
 }
 
 const store = useProductosStore()
-const { catalogFilter, botTab, navigateTo } = useNavigation()
+const route = useRoute()
+const router = useRouter()
 const { trackCategoryFilter, trackWhatsAppClick } = useAnalytics()
 
 // ── Tabs fijos ────────────────────────────────────────────────────────────────
@@ -112,8 +113,9 @@ const TABS = [
 const activeTab = ref('todos')
 
 watch(
-  catalogFilter,
-  (filter) => {
+  () => route.query.filtro,
+  (filtroRaw) => {
+    const filter = Array.isArray(filtroRaw) ? filtroRaw[0] : filtroRaw
     if (!filter) return
     const [categoria] = filter.split(':')
     const key = categoria?.toUpperCase()
@@ -447,7 +449,7 @@ onMounted(() => {
             <!-- Botón Barroca Bot para imágenes IA -->
             <button
               v-if="modalColor?.imagenes[modalImageIdx]?.legend === 'ai_render'"
-              @click="botTab = 'showroom'; navigateTo('barroca-bot'); closeModal()"
+              @click="router.push({ name: 'barroca-bot', query: { tab: 'showroom' } }); closeModal()"
               class="w-full flex items-center justify-center gap-2 bg-verde hover:bg-verde-light text-white font-heading font-semibold text-sm px-5 py-3 rounded-xl transition-colors duration-200"
             >
               <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

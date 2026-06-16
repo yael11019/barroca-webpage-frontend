@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 import api from '@/services/api'
+import { useAnalytics } from '@/composables/useAnalytics'
+
+const { trackBotOpen, trackBotMessage } = useAnalytics()
 
 interface Mensaje {
   id: number
@@ -44,6 +47,7 @@ async function sendMessage(text?: string) {
   const msg = (text ?? inputText.value).trim()
   if (!msg || isBotTyping.value) return
   inputText.value = ''
+  trackBotMessage(msg)
   mensajes.value.push({ id: msgId++, from: 'user', text: msg })
   await scrollToBottom()
   isBotTyping.value = true
@@ -66,6 +70,9 @@ async function sendMessage(text?: string) {
 
 function toggle() {
   isOpen.value = !isOpen.value
+  if (isOpen.value) {
+    trackBotOpen('Botón flotante')
+  }
 }
 </script>
 

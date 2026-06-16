@@ -1,7 +1,66 @@
 import { event } from 'vue-gtag'
 import type { Producto } from '@/types/producto'
 
+// Nombres legibles de cada sección/pantalla para que en los reportes de GA4
+// aparezcan títulos claros en lugar de slugs internos.
+const NOMBRES_PANTALLA: Record<string, string> = {
+  inicio: 'Inicio',
+  nosotros: 'Nosotros',
+  catalogo: 'Catálogo',
+  'sucursales-distribuidores': 'Sucursales y Distribuidores',
+  sucursales: 'Sucursales',
+  distribuidores: 'Distribuidores',
+  agendar: 'Agendar cita',
+  servicios: 'Servicios',
+  proyectos: 'Proyectos',
+  'carrito-vista': 'Carrito',
+  'barroca-bot': 'Barroca Bot',
+}
+
 export function useAnalytics() {
+  // ── Navegación entre pantallas ──
+  // Se llama desde router.afterEach en cada cambio de ruta (y desde
+  // CookieConsent al obtener consentimiento) para enviar un page_view con
+  // título legible. Esto habilita en GA4: usuarios por pantalla, vistas por
+  // pantalla y tiempo de interacción promedio en cada pantalla.
+  function trackScreenView(section: string) {
+    const titulo = NOMBRES_PANTALLA[section] ?? section
+    const path = `/${section}`
+    event('page_view', {
+      page_title: titulo,
+      page_path: path,
+      page_location:
+        typeof window !== 'undefined' ? `${window.location.origin}${path}` : path,
+      screen_name: titulo,
+    })
+  }
+
+  /**
+   * Evento genérico para cualquier clic/interacción no cubierta por los
+   * helpers específicos. Útil para CTAs sueltos: trackEvent('click_cta', {...}).
+   */
+  function trackEvent(nombre: string, params: Record<string, unknown> = {}) {
+    event(nombre, params)
+  }
+
+  /** Clic en un botón/CTA identificable, indicando la pantalla de origen. */
+  function trackCtaClick(etiqueta: string, pantalla?: string) {
+    event('click_cta', {
+      event_category: 'cta',
+      event_label: etiqueta,
+      ...(pantalla ? { screen_name: pantalla } : {}),
+    })
+  }
+
+  // ── Barroca Bot ───────────────────────────────────────────
+  function trackBotOpen(origen: string) {
+    event('bot_abierto', { event_category: 'bot', event_label: origen })
+  }
+
+  function trackBotMessage(pregunta: string) {
+    event('bot_mensaje', { event_category: 'bot', event_label: pregunta.slice(0, 100) })
+  }
+
   // ── Contacto ──────────────────────────────────────────────
 
   function trackWhatsAppClick(contexto: string) {
@@ -142,6 +201,11 @@ export function useAnalytics() {
   }
 
   return {
+    trackScreenView,
+    trackEvent,
+    trackCtaClick,
+    trackBotOpen,
+    trackBotMessage,
     trackWhatsAppClick,
     trackPhoneClick,
     trackEmailClick,

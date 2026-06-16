@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { useNavigation } from '@/composables/useNavigation'
+import { useRoute, useRouter } from 'vue-router'
 
-const { currentSection, navigateTo } = useNavigation()
+const route = useRoute()
+const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 const categoriesOpen = ref(false)
 const navFits = ref(true)
 
 const navLinks = [
-  { label: 'Nosotros', section: 'nosotros' },
-  { label: 'Catálogo', section: 'catalogo' },
-  { label: 'Sucursales / Distribuidores', section: 'sucursales-distribuidores' },
-  { label: 'Servicios', section: 'servicios' },
+  { label: 'Nosotros', name: 'nosotros' },
+  { label: 'Catálogo', name: 'catalogo' },
+  { label: 'Sucursales / Distribuidores', name: 'sucursales-distribuidores' },
+  { label: 'Servicios', name: 'servicios' },
   // Oculto temporalmente del menú (el componente ProyectosSection sigue existiendo):
-  // { label: 'Proyectos / Comunidad', section: 'proyectos' },
-  { label: 'Barroca Bot', section: 'barroca-bot' },
+  // { label: 'Proyectos / Comunidad', name: 'proyectos' },
+  { label: 'Barroca Bot', name: 'barroca-bot' },
 ]
 
 const headerInnerRef = ref<HTMLElement | null>(null)
@@ -51,8 +52,8 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkFit)
 })
 
-function goTo(section: string) {
-  navigateTo(section)
+function goTo(name: string) {
+  router.push({ name })
   mobileMenuOpen.value = false
   categoriesOpen.value = false
 }
@@ -76,11 +77,11 @@ function goTo(section: string) {
         <nav v-show="navFits" class="hidden md:flex items-center space-x-1">
           <button
             v-for="link in navLinks"
-            :key="link.section"
-            @click="goTo(link.section)"
+            :key="link.name"
+            @click="goTo(link.name)"
             :class="[
               'px-4 py-2 font-heading text-sm font-semibold uppercase tracking-wider rounded transition-colors duration-200 whitespace-nowrap',
-              currentSection === link.section
+              route.name === link.name
                 ? 'text-gold border-b-2 border-gold'
                 : 'text-charcoal hover:text-gold',
             ]"
@@ -97,7 +98,7 @@ function goTo(section: string) {
         >
           <button
             v-for="link in navLinks"
-            :key="`measure-${link.section}`"
+            :key="`measure-${link.name}`"
             class="px-4 py-2 font-heading text-sm font-semibold uppercase tracking-wider whitespace-nowrap"
           >
             {{ link.label }}
@@ -126,11 +127,11 @@ function goTo(section: string) {
             >
               <button
                 v-for="item in navLinks"
-                :key="item.section"
-                @click="goTo(item.section)"
+                :key="item.name"
+                @click="goTo(item.name)"
                 :class="[
                   'block w-full text-left px-4 py-2.5 text-sm font-heading font-semibold transition-colors',
-                  currentSection === item.section
+                  route.name === item.name
                     ? 'text-gold bg-gold/5'
                     : 'text-charcoal hover:text-gold hover:bg-gold/5',
                 ]"
@@ -169,11 +170,11 @@ function goTo(section: string) {
       >
         <button
           v-for="link in navLinks"
-          :key="link.section"
-          @click="goTo(link.section)"
+          :key="link.name"
+          @click="goTo(link.name)"
           :class="[
             'block w-full text-left py-3 px-1 font-heading text-sm font-semibold uppercase tracking-wider transition-colors',
-            currentSection === link.section ? 'text-gold' : 'text-charcoal hover:text-gold',
+            route.name === link.name ? 'text-gold' : 'text-charcoal hover:text-gold',
           ]"
         >
           {{ link.label }}

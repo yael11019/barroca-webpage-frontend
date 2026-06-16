@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useNavigation } from '@/composables/useNavigation'
+import { useRouter } from 'vue-router'
+import { useAnalytics } from '@/composables/useAnalytics'
 import { useConfigStore } from '@/stores/config'
 import CatalogoDigitalButton from '@/components/landing/CatalogoDigitalButton.vue'
 
-const { navigateTo } = useNavigation()
+const router = useRouter()
+const { trackCtaClick } = useAnalytics()
 const configStore = useConfigStore()
 
 // ── Hero ─────────────────────────────────────────────────────────────────────
@@ -36,7 +38,7 @@ function slideHasImage(s: SlideDisplay) { return !!(s.desktop_url ?? s.image_url
 // El backend manda `vista` (ej. "distribuidores", "catalogo"). Lo mapeamos a la
 // sección interna correspondiente.
 const VISTA_A_SECCION: Record<string, string> = {
-  distribuidores: 'distribuidores',
+  distribuidores: 'sucursales-distribuidores',
   catalogo: 'catalogo',
 }
 
@@ -44,7 +46,7 @@ function slideEsClickeable(s: SlideDisplay) { return !!s.vista || !!s.link_url }
 
 function onSlideClick(s: SlideDisplay) {
   if (s.vista) {
-    navigateTo(VISTA_A_SECCION[s.vista] ?? s.vista)
+    router.push({ name: VISTA_A_SECCION[s.vista] ?? s.vista })
   } else if (s.link_url) {
     window.open(s.link_url, '_blank', 'noopener')
   }
@@ -146,7 +148,7 @@ const razones = [
 ]
 
 function irACatalogo(filtro?: string) {
-  navigateTo('catalogo', filtro ?? null)
+  router.push({ name: 'catalogo', query: filtro ? { filtro } : {} })
 }
 </script>
 
@@ -199,13 +201,13 @@ function irACatalogo(filtro?: string) {
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
-            @click="irACatalogo()"
+            @click="trackCtaClick('Hero: Ver Catálogo', 'Inicio'); irACatalogo()"
             class="bg-gold hover:bg-gold-dark text-white font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
           >
             Ver Catálogo
           </button>
           <button
-            @click="navigateTo('sucursales')"
+            @click="trackCtaClick('Hero: Nuestras Sucursales', 'Inicio'); router.push({ name: 'sucursales-distribuidores' })"
             class="font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
             :class="configStore.heroUrl
               ? 'border-2 border-white hover:bg-white hover:text-charcoal text-white'
@@ -435,7 +437,7 @@ function irACatalogo(filtro?: string) {
 
             <div class="mt-10">
               <button
-                @click="navigateTo('nosotros')"
+                @click="router.push({ name: 'nosotros' })"
                 class="inline-flex items-center gap-2 bg-gold hover:bg-gold-dark text-verde font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
               >
                 Conoce nuestra historia
