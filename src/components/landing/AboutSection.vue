@@ -43,10 +43,13 @@ function scrollTimeline(direction: 'left' | 'right') {
 
 // Certificaciones — TODO: reemplazar con logos y nombres reales
 const certificaciones = [
-  { nombre: 'ISO 9001', descripcion: 'Calidad en procesos' },
-  { nombre: 'Certificación 2', descripcion: 'TODO: nombre real' },
-  { nombre: 'Certificación 3', descripcion: 'TODO: nombre real' },
-  { nombre: 'Certificación 4', descripcion: 'TODO: nombre real' },
+  { nombre: 'CE', descripcion: 'Seguridad, baja emisión y resistencia al fuego en melaminas y pisos' },
+  { nombre: 'ISO 9001', descripcion: 'Gestión de la Calidad' },
+  { nombre: 'ISO 14001', descripcion: 'Gestión Ambiental' },
+  { nombre: 'ISO 45001', descripcion: 'Seguridad y Salud en el Trabajo' },
+  { nombre: 'ISO 22196', descripcion: 'Resistencia a bacterias' },
+  { nombre: 'CARB', descripcion: 'Cumplimiento de normas de emisiones de formaldehído' },
+  { nombre: 'TSCA', descripcion: 'Cumplimiento de la Ley de Control de Sustancias Tóxicas' },
 ]
 </script>
 
