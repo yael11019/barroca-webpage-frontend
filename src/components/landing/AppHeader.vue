@@ -12,7 +12,8 @@ const navFits = ref(true)
 const navLinks = [
   { label: 'Nosotros', name: 'nosotros' },
   { label: 'Catálogo', name: 'catalogo' },
-  { label: 'Sucursales / Distribuidores', name: 'sucursales-distribuidores' },
+  { label: 'Sucursales', name: 'sucursales' },
+  { label: 'Distribuidores', name: 'distribuidores' },
   { label: 'Servicios', name: 'servicios' },
   // Oculto temporalmente del menú (el componente ProyectosSection sigue existiendo):
   // { label: 'Proyectos / Comunidad', name: 'proyectos' },

@@ -38,7 +38,7 @@ function slideHasImage(s: SlideDisplay) { return !!(s.desktop_url ?? s.image_url
 // El backend manda `vista` (ej. "distribuidores", "catalogo"). Lo mapeamos a la
 // sección interna correspondiente.
 const VISTA_A_SECCION: Record<string, string> = {
-  distribuidores: 'sucursales-distribuidores',
+  distribuidores: 'distribuidores',
   catalogo: 'catalogo',
 }
 
@@ -207,7 +207,16 @@ function irACatalogo(filtro?: string) {
             Ver Catálogo
           </button>
           <button
-            @click="trackCtaClick('Hero: Nuestras Sucursales', 'Inicio'); router.push({ name: 'sucursales-distribuidores' })"
+            @click="trackCtaClick('Hero: Conocer Distribuidores', 'Inicio'); router.push({ name: 'distribuidores' })"
+            class="font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
+            :class="configStore.heroUrl
+              ? 'border-2 border-white hover:bg-white hover:text-charcoal text-white'
+              : 'border-2 border-verde hover:bg-verde hover:text-gold text-verde'"
+          >
+            Distribuidores
+          </button>
+          <button
+            @click="trackCtaClick('Hero: Nuestras Sucursales', 'Inicio'); router.push({ name: 'sucursales' })"
             class="font-heading font-bold uppercase tracking-wider px-8 py-4 rounded transition-colors duration-200"
             :class="configStore.heroUrl
               ? 'border-2 border-white hover:bg-white hover:text-charcoal text-white'

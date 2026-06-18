@@ -478,6 +478,27 @@ onMounted(() => {
               <span class="font-heading font-bold text-charcoal">{{ modalColor?.nombre }}</span>
             </div>
 
+            <!-- Espesores disponibles del color -->
+            <div v-if="modalColor?.espesores?.length">
+              <h4 class="font-heading font-semibold text-charcoal text-sm mb-2">Espesores disponibles</h4>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  v-for="espesor in modalColor.espesores"
+                  :key="espesor"
+                  class="inline-flex items-center gap-1.5 text-xs font-heading font-semibold text-charcoal bg-gold/10 border border-gold/30 rounded-full px-3 py-1.5"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-gold"></span>
+                  {{ espesor }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Tamaño del tablero -->
+            <div v-if="modalColor?.tamano_hoja" class="flex items-center gap-2">
+              <span class="text-xs font-heading text-gray-400 uppercase tracking-wider">Tamaño del tablero:</span>
+              <span class="font-heading font-bold text-charcoal">{{ modalColor.tamano_hoja }}</span>
+            </div>
+
             <!-- Selector de todos los colores -->
             <div>
               <h4 class="font-heading font-semibold text-charcoal text-sm mb-3">
