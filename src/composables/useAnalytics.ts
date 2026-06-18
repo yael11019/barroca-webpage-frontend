@@ -7,7 +7,6 @@ const NOMBRES_PANTALLA: Record<string, string> = {
   inicio: 'Inicio',
   nosotros: 'Nosotros',
   catalogo: 'Catálogo',
-  'sucursales-distribuidores': 'Sucursales y Distribuidores',
   sucursales: 'Sucursales',
   distribuidores: 'Distribuidores',
   agendar: 'Agendar cita',

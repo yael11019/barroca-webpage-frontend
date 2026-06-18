@@ -50,6 +50,7 @@ const certificaciones = [
   { nombre: 'ISO 22196', descripcion: 'Resistencia a bacterias' },
   { nombre: 'CARB', descripcion: 'Cumplimiento de normas de emisiones de formaldehído' },
   { nombre: 'TSCA', descripcion: 'Cumplimiento de la Ley de Control de Sustancias Tóxicas' },
+  { nombre: 'FSC', descripcion: 'Consejo de Administración Forestal' },
 ]
 </script>
 

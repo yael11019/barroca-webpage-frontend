@@ -16,20 +16,25 @@ const MENSAJE_POR_RUTA: Record<string, { texto: string; contexto: string }> = {
     contexto: 'Inicio',
   },
   nosotros: {
-    texto: 'Hola, me gustaría conocer más sobre Barroca y lo que ofrecen.',
+    texto: 'Hola, me gustaría conocer más sobre Barroca.',
     contexto: 'Nosotros',
   },
   catalogo: {
-    texto: 'Hola, me gustaría obtener más información sobre sus productos.',
+    texto: 'Hola, estoy buscando productos para mi proyecto.',
     contexto: 'Catálogo',
   },
-  'sucursales-distribuidores': {
+  sucursales: {
     texto:
-      'Hola, me interesa información para ser distribuidor y saber dónde tienen sucursales y almacenes.',
-    contexto: 'Sucursales y Distribuidores',
+      'Hola, ¿dónde puedo encontrar sus productos?',
+    contexto: 'Sucursales',
+  },
+  distribuidores: {
+    texto:
+      'Hola, me interesa conocer los distribuidores de Barroca.',
+    contexto: 'Distribuidores',
   },
   servicios: {
-    texto: 'Hola, me gustaría obtener más información sobre sus servicios.',
+    texto: 'Hola, me gustaría recibir más información sobre sus servicios.',
     contexto: 'Servicios',
   },
   agendar: {
@@ -45,13 +50,13 @@ const MENSAJE_POR_RUTA: Record<string, { texto: string; contexto: string }> = {
     contexto: 'Carrito',
   },
   'barroca-bot': {
-    texto: 'Hola, me gustaría obtener más información sobre Barroca.',
+    texto: 'Hola, necesito asesoría. 😊',
     contexto: 'Barroca Bot',
   },
 }
 
 const MENSAJE_DEFAULT = {
-  texto: 'Hola, me gustaría obtener más información sobre sus productos.',
+  texto: 'Hola, estoy buscando productos para mi proyecto.',
   contexto: 'Boton flotante general',
 }
 

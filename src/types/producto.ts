@@ -8,6 +8,8 @@ export interface ImagenCatalogo {
 export interface ColorCatalogo {
   nombre: string
   imagenes: ImagenCatalogo[]
+  espesores?: string[]
+  tamano_hoja?: string | null
 }
 
 export interface ProductoCatalogo {

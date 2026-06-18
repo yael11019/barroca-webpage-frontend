@@ -25,9 +25,14 @@ const router = createRouter({
           component: () => import('@/components/landing/ProductsSection.vue'),
         },
         {
-          path: 'sucursales-distribuidores',
-          name: 'sucursales-distribuidores',
-          component: () => import('@/components/landing/SucursalesDistribuidoresSection.vue'),
+          path: 'sucursales',
+          name: 'sucursales',
+          component: () => import('@/components/landing/SucursalesSection.vue'),
+        },
+        {
+          path: 'distribuidores',
+          name: 'distribuidores',
+          component: () => import('@/components/landing/DistribuidoresSection.vue'),
         },
         {
           path: 'servicios',
@@ -57,9 +62,8 @@ const router = createRouter({
         },
       ],
     },
-    // Redirects canónicos: el menú/CTAs antiguos apuntaban a estas variantes.
-    { path: '/sucursales', redirect: { name: 'sucursales-distribuidores' } },
-    { path: '/distribuidores', redirect: { name: 'sucursales-distribuidores' } },
+    // Redirects canónicos: la ruta combinada antigua ahora vive en dos secciones.
+    { path: '/sucursales-distribuidores', redirect: { name: 'sucursales' } },
     {
       path: '/privacidad',
       name: 'privacidad',
