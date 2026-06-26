@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { addGtag } from 'vue-gtag'
 import { useRoute } from 'vue-router'
 import { useAnalytics } from '@/composables/useAnalytics'
+import { initMetaPixel } from '@/utils/metaPixel'
 
 const STORAGE_KEY = 'cookie_consent'
 const visible = ref(false)
@@ -16,6 +17,9 @@ const route = useRoute()
 function iniciarAnalytics() {
   addGtag()
   trackScreenView((route.name as string | undefined) ?? route.path)
+  // Meta Pixel: se inicializa aquí (no en el HTML) para respetar el mismo
+  // consentimiento de cookies que GA4. Dispara su primer PageView al iniciar.
+  initMetaPixel()
 }
 
 onMounted(() => {
