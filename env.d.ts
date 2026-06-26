@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_FRONTEND_KEY: string
   /** ID de medición de Google Analytics 4 (formato G-XXXXXXXXXX). */
   readonly VITE_GA_MEASUREMENT_ID?: string
+  /** ID del Meta Pixel (Facebook Pixel) para Meta Ads. */
+  readonly VITE_META_PIXEL_ID?: string
 }
 
 interface ImportMeta {

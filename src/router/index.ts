@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeLayout from '../views/HomeLayout.vue'
 import { useAnalytics } from '@/composables/useAnalytics'
+import { trackPixelPageView } from '@/utils/metaPixel'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -86,6 +87,10 @@ router.afterEach((to) => {
   const { trackScreenView } = useAnalytics()
   const section = (to.name as string | undefined) ?? to.path
   trackScreenView(section)
+  // Meta Pixel: en una SPA la navegación no recarga la página, así que el
+  // PageView se dispara aquí. No hace nada hasta que el Pixel se inicializa
+  // (tras aceptar cookies), de modo que nunca se rastrea sin consentimiento.
+  trackPixelPageView()
 })
 
 export default router
