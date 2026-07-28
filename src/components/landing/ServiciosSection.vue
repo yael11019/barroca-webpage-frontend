@@ -175,7 +175,7 @@ const tiempos = [
 ]
 
 // ── Mapa (misma cobertura que Distribuidores) ─────────────────────────────
-const estadosCobertura = ['cmx', 'mex', 'pue', 'mor', 'hid', 'que', 'gua', 'tla']
+const estadosCobertura = ['cmx', 'mex', 'pue', 'mor', 'hid', 'que', 'gua', 'tla', 'mic']
 
 function fillEstado(id: string): string {
   return estadosCobertura.includes(id) ? '#FFD225' : '#D1D5DB'
@@ -503,7 +503,7 @@ async function submitForm() {
               <div>
                 <p class="font-heading font-bold text-charcoal text-sm">Cobertura actual</p>
                 <p class="text-gray-500 text-sm mt-0.5">
-                  CDMX, Estado de México, Puebla, Morelos, Hidalgo, Querétaro, Guanajuato y Tlaxcala.
+                  CDMX, Estado de México, Puebla, Morelos, Hidalgo, Querétaro, Guanajuato, Michoacán y Tlaxcala.
                 </p>
               </div>
             </div>
