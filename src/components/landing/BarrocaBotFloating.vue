@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import { useAnalytics } from '@/composables/useAnalytics'
 
 const { trackBotOpen, trackBotMessage } = useAnalytics()
+const router = useRouter()
 
 interface Mensaje {
   id: number
   from: 'bot' | 'user'
   text: string
+  // Cuando está presente, se muestra un botón bajo la respuesta que lleva
+  // al Showroom Virtual para que el usuario haga la prueba.
+  action?: 'showroom'
 }
 
 const isOpen = ref(false)
@@ -38,6 +43,35 @@ function renderText(text: string): string {
     .replace(/\n/g, '<br/>')
 }
 
+// Respuesta cuando el usuario pregunta cómo/dónde visualizar o probar un
+// material en su espacio: lo mandamos al Showroom Virtual con un botón.
+const showroomResponse = '¡Claro! Puedes visualizar cómo quedaría tu espacio con nuestros materiales en el **Showroom Virtual**. 🖼️\n\nSolo elige el material, sube una foto de tu espacio y la IA genera el resultado. ¡Pruébalo con el botón de abajo! 👇'
+
+// Frases que indican intención de visualizar/probar el espacio.
+const showroomIntentKeywords = [
+  'visualizar mi espacio', 'visualizar mi', 'visualiza mi', 'visualizar el espacio',
+  'ver mi espacio', 'ver como quedaria', 'ver como se veria', 'como quedaria mi',
+  'como se veria mi', 'como se ve en mi', 'ver en mi espacio', 'probar en mi espacio',
+  'probar el material', 'probar un material', 'probar melamina', 'probar piso',
+  'simular mi espacio', 'previsualizar', 'donde visualizo', 'donde puedo visualizar',
+  'como visualizo', 'como puedo visualizar', 'visualizador', 'showroom',
+]
+
+function normalize(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+function isShowroomIntent(text: string): boolean {
+  const n = normalize(text)
+  return showroomIntentKeywords.some(k => n.includes(normalize(k)))
+}
+
+// Cierra el popup y navega al Showroom Virtual listo para la prueba.
+function goToShowroom() {
+  isOpen.value = false
+  router.push({ name: 'barroca-bot', query: { tab: 'showroom' } })
+}
+
 async function scrollToBottom() {
   await nextTick()
   messagesEnd.value?.scrollIntoView({ behavior: 'smooth' })
@@ -50,6 +84,17 @@ async function sendMessage(text?: string) {
   trackBotMessage(msg)
   mensajes.value.push({ id: msgId++, from: 'user', text: msg })
   await scrollToBottom()
+
+  // Intención de visualizar/probar el espacio → Showroom Virtual con botón.
+  if (isShowroomIntent(msg)) {
+    isBotTyping.value = true
+    await scrollToBottom()
+    isBotTyping.value = false
+    mensajes.value.push({ id: msgId++, from: 'bot', text: showroomResponse, action: 'showroom' })
+    await scrollToBottom()
+    return
+  }
+
   isBotTyping.value = true
   await scrollToBottom()
 
@@ -135,15 +180,30 @@ function toggle() {
                 d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
             </svg>
           </div>
-          <div
-            :class="[
-              'max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed',
-              msg.from === 'bot'
-                ? 'bg-gray-100 text-charcoal rounded-tl-none'
-                : 'bg-charcoal text-white rounded-tr-none',
-            ]"
-            v-html="renderText(msg.text)"
-          />
+          <div class="max-w-[85%] flex flex-col items-start gap-1.5">
+            <div
+              :class="[
+                'px-3 py-2 rounded-2xl text-xs leading-relaxed',
+                msg.from === 'bot'
+                  ? 'bg-gray-100 text-charcoal rounded-tl-none'
+                  : 'bg-charcoal text-white rounded-tr-none',
+              ]"
+              v-html="renderText(msg.text)"
+            />
+
+            <!-- Botón hacia el Showroom Virtual -->
+            <button
+              v-if="msg.action === 'showroom'"
+              @click="goToShowroom"
+              class="inline-flex items-center gap-1.5 bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold text-[10px] uppercase tracking-wider px-3 py-2 rounded-xl transition-colors shadow-sm"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+              </svg>
+              Probar en el Showroom
+            </button>
+          </div>
         </div>
 
         <!-- Typing indicator -->
