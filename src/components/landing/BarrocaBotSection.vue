@@ -12,6 +12,9 @@ interface Mensaje {
   id: number
   from: 'bot' | 'user'
   text: string
+  // Cuando está presente, se muestra un botón bajo la respuesta que lleva
+  // al Showroom Virtual para que el usuario haga la prueba.
+  action?: 'showroom'
 }
 
 type ShowroomStep = 'material' | 'upload' | 'result'
@@ -199,6 +202,26 @@ const faqs = [
 
 const defaultResponse = 'No tengo información específica sobre eso, pero con gusto te atendemos directamente. 😊\n\nEscríbenos por **WhatsApp al +52 443 339 6659** o usa los botones de abajo para preguntas frecuentes.'
 
+// Respuesta cuando el usuario pregunta cómo/dónde visualizar o probar un
+// material en su espacio: lo mandamos al Showroom Virtual con un botón.
+const showroomResponse = '¡Claro! Puedes visualizar cómo quedaría tu espacio con nuestros materiales en el **Showroom Virtual**. 🖼️\n\nSolo elige el material, sube una foto de tu espacio y la IA genera el resultado. ¡Pruébalo con el botón de abajo! 👇'
+
+// Frases que indican intención de visualizar/probar el espacio. Se evalúan
+// sobre el texto normalizado del usuario.
+const showroomIntentKeywords = [
+  'visualizar mi espacio', 'visualizar mi', 'visualiza mi', 'visualizar el espacio',
+  'ver mi espacio', 'ver como quedaria', 'ver como se veria', 'como quedaria mi',
+  'como se veria mi', 'como se ve en mi', 'ver en mi espacio', 'probar en mi espacio',
+  'probar el material', 'probar un material', 'probar melamina', 'probar piso',
+  'simular mi espacio', 'previsualizar', 'donde visualizo', 'donde puedo visualizar',
+  'como visualizo', 'como puedo visualizar', 'visualizador', 'showroom',
+]
+
+function isShowroomIntent(text: string): boolean {
+  const n = normalize(text)
+  return showroomIntentKeywords.some(k => n.includes(normalize(k)))
+}
+
 function normalize(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
@@ -220,6 +243,19 @@ async function sendMessage(text?: string) {
   inputText.value = ''
   mensajes.value.push({ id: msgId++, from: 'user', text: msg })
   await scrollToBottom()
+
+  // Si el usuario quiere visualizar/probar su espacio, respondemos con el
+  // Showroom Virtual y un botón que lo lleva a hacer la prueba (sin pasar
+  // por el backend, que no conoce esta funcionalidad).
+  if (isShowroomIntent(msg)) {
+    isBotTyping.value = true
+    await scrollToBottom()
+    isBotTyping.value = false
+    mensajes.value.push({ id: msgId++, from: 'bot', text: showroomResponse, action: 'showroom' })
+    await scrollToBottom()
+    return
+  }
+
   isBotTyping.value = true
   await scrollToBottom()
 
@@ -235,6 +271,15 @@ async function sendMessage(text?: string) {
   isBotTyping.value = false
   mensajes.value.push({ id: msgId++, from: 'bot', text: respuesta })
   await scrollToBottom()
+}
+
+// Lleva al usuario al Showroom Virtual listo para hacer la prueba. En móvil
+// cambia a la pestaña de Showroom; en escritorio ya está visible al costado.
+async function goToShowroom() {
+  activeTab.value = 'showroom'
+  resetShowroom()
+  await nextTick()
+  document.getElementById('barroca-bot')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 async function scrollToBottom() {
@@ -863,15 +908,30 @@ function probarOtroMaterial() {
                   </svg>
                 </div>
 
-                <div
-                  :class="[
-                    'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
-                    msg.from === 'bot'
-                      ? 'bg-gray-100 text-charcoal rounded-tl-none'
-                      : 'bg-charcoal text-white rounded-tr-none',
-                  ]"
-                  v-html="renderText(msg.text)"
-                ></div>
+                <div class="max-w-[80%] flex flex-col items-start gap-2">
+                  <div
+                    :class="[
+                      'px-4 py-3 rounded-2xl text-sm leading-relaxed',
+                      msg.from === 'bot'
+                        ? 'bg-gray-100 text-charcoal rounded-tl-none'
+                        : 'bg-charcoal text-white rounded-tr-none',
+                    ]"
+                    v-html="renderText(msg.text)"
+                  ></div>
+
+                  <!-- Botón hacia el Showroom Virtual -->
+                  <button
+                    v-if="msg.action === 'showroom'"
+                    @click="goToShowroom"
+                    class="inline-flex items-center gap-2 bg-gold hover:bg-gold-dark text-charcoal font-heading font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Probar en el Showroom
+                  </button>
+                </div>
               </div>
 
               <!-- Typing indicator -->
