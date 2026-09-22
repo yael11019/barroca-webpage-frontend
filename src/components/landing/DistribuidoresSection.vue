@@ -474,7 +474,7 @@ onMounted(() => {
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="w-3.5 h-3.5 rounded-sm bg-verde inline-block"></span>
-                <span class="text-gray-500">Con envíos</span>
+                <span class="text-gray-500">Matriz</span>
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="w-3.5 h-3.5 rounded-sm bg-gray-300 inline-block"></span>
