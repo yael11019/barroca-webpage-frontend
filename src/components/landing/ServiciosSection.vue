@@ -67,6 +67,7 @@ const SERVICIO_SLUG: Record<string, string> = {
   afilado:     'afilado',
   envio:       'envios',
   asesoria:    'asesoria',
+  diagrama:    'diagrama',
 }
 
 const serviciosImagenes = ref<Record<string, ServicioImagen>>({})
@@ -130,6 +131,17 @@ const servicios = [
     iconColor: 'from-emerald-50 to-teal-50',
   },
   {
+    id: 'diagrama',
+    nombre: 'Realiza tu diagrama de cortes',
+    descripcion: 'Realiza tu propio diagrama de cortes y contacta con tu asesor en ventas para dar seguimiento a tu pedido.',
+    tipo: 'exclusivo',
+    etiqueta: 'Exclusivo Barroca',
+    imagen: '',
+    imagenLocal: '/img/diagrama-cortes.webp',
+    enlace: 'https://www.cortamas.com/barroca',
+    iconColor: 'from-emerald-50 to-teal-50',
+  },
+  {
     id: 'asesoria',
     nombre: 'Asesoría Personalizada',
     descripcion: 'Solicita una visita a tu negocio. Nuestro equipo va a tu espacio para asesorarte en la elección de materiales. Disponible para cualquier persona.',
@@ -140,9 +152,13 @@ const servicios = [
   },
 ]
 
-// Servicios con su imagen del backend ya resuelta (o null si aún no hay)
+// Servicios con su imagen del backend ya resuelta (o la local / null si aún no hay)
 const serviciosConImagen = computed(() =>
-  servicios.map(s => ({ ...s, imagen: imagenServicio(s.id) })),
+  servicios.map(s => ({
+    ...s,
+    imagen: imagenServicio(s.id)
+      ?? (s.imagenLocal ? { image_url: s.imagenLocal, blur_placeholder: null } : null),
+  })),
 )
 
 // ── Tiempos de entrega ─────────────────────────────────────────────────────
@@ -348,7 +364,17 @@ async function submitForm() {
                 </svg>
                 Servicio disponible
               </span>
+              <a
+                v-if="s.enlace"
+                :href="s.enlace"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-xs font-heading font-semibold text-charcoal border border-charcoal/30 hover:border-gold hover:text-gold px-3 py-1 rounded-full transition-colors"
+              >
+                Crear diagrama
+              </a>
               <button
+                v-else
                 @click="abrirCotizacion(s.id, s.nombre)"
                 class="text-xs font-heading font-semibold text-charcoal border border-charcoal/30 hover:border-gold hover:text-gold px-3 py-1 rounded-full transition-colors"
               >
