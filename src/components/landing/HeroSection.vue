@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAnalytics } from '@/composables/useAnalytics'
 import { useConfigStore } from '@/stores/config'
 import CatalogoDigitalButton from '@/components/landing/CatalogoDigitalButton.vue'
+import GaleriaSection from '@/components/landing/GaleriaSection.vue'
 
 const router = useRouter()
 const { trackCtaClick } = useAnalytics()
@@ -396,6 +397,9 @@ function irACatalogo(filtro?: string) {
         </div>
       </div>
     </section>
+
+    <!-- ── Galería: procesos, contenido y tutoriales (se oculta si no hay contenido) -->
+    <GaleriaSection />
 
     <!-- ── Por qué elegir Barroca ────────────────────────────────────────────── -->
     <section class="py-20 md:py-28 bg-verde">
