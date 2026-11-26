@@ -136,7 +136,10 @@ const ORDEN_SUBCATEGORIA = [
 function ordenProducto(p: ProductoCatalogo): number {
   const key = (p.subcategoria ?? p.tipo ?? '').toUpperCase()
   const idx = ORDEN_SUBCATEGORIA.findIndex(o => key.startsWith(o))
-  return idx === -1 ? ORDEN_SUBCATEGORIA.length : idx
+  if (idx !== -1) return idx
+  // Líneas nuevas creadas desde el ERP: las de melamina van antes de los pisos.
+  const esPiso = (p.tipo ?? '').toUpperCase().startsWith('PISO')
+  return esPiso ? ORDEN_SUBCATEGORIA.length : ORDEN_SUBCATEGORIA.indexOf('PISO SPC') - 0.5
 }
 
 // ── Productos filtrados por tab ───────────────────────────────────────────────
