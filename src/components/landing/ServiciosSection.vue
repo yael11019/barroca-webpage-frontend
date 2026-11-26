@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import Mexico from '@svg-maps/mexico'
 import api from '@/services/api'
+import EspaciosClientesSection from './EspaciosClientesSection.vue'
 
 const SERVICIO_API_KEY: Record<string, 'corte' | 'enchapado' | 'afilado' | 'otro'> = {
   cortes:     'corte',
@@ -385,6 +386,9 @@ async function submitForm() {
         </div>
       </div>
     </div>
+
+    <!-- ── Espacios de clientes (se oculta si no hay contenido) ──────────── -->
+    <EspaciosClientesSection />
 
     <!-- ── Videos de servicios ───────────────────────────────────────────── -->
     <div v-if="videosLoading || videos.length > 0" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
